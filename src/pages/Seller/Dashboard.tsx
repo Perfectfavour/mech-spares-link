@@ -20,9 +20,10 @@ export default function SellerDashboard() {
 
   const pendingRequests = requests.slice(0, 3).map((req) => ({
     id: req.id,
-    customer: req.vehicle || 'Mechanic',
+    customer: req.customer || req.vehicle || 'Mechanic',
     part: req.part,
     vehicle: req.vehicle,
+    mechanic_id: req.mechanic_id,
     time: req.date || 'Just now',
   }));
 
@@ -66,22 +67,24 @@ export default function SellerDashboard() {
         </div>
 
         {/* Part Requests Signature Feature Notification */}
-        <Card 
-          className="p-5 bg-amber-50 border-2 border-amber-200 rounded-[32px] flex items-center gap-4 cursor-pointer active:scale-[0.98] transition-all"
-          onClick={() => navigate('/messages?recipientId=mech-seed')}
-        >
-          <div className="bg-amber-100 p-4 rounded-2xl text-amber-600">
-            <MessageCircle size={32} />
-          </div>
-          <div className="flex-1">
-            <h4 className="font-bold text-amber-900 leading-tight">New Part Request</h4>
-            <p className="text-xs text-amber-700 mt-1">
-              {/* {pendingRequests[0].customer} is looking for a {pendingRequests[0].part}. */}
-              Customer is looking for a {pendingRequests[0].part} for {pendingRequests[0].vehicle}.
-            </p>
-          </div>
-          <ChevronRight size={20} className="text-amber-400" />
-        </Card>
+        {pendingRequests.length > 0 && (
+          <Card 
+            className="p-5 bg-amber-50 border-2 border-amber-200 rounded-[32px] flex items-center gap-4 cursor-pointer active:scale-[0.98] transition-all"
+            onClick={() => navigate(`/messages?recipientId=${pendingRequests[0].mechanic_id || 'mech-seed'}`)}
+          >
+            <div className="bg-amber-100 p-4 rounded-2xl text-amber-600">
+              <MessageCircle size={32} />
+            </div>
+            <div className="flex-1">
+              <h4 className="font-bold text-amber-900 leading-tight">New Part Request</h4>
+              <p className="text-xs text-amber-700 mt-1">
+                {/* {pendingRequests[0].customer} is looking for a {pendingRequests[0].part}. */}
+                Customer is looking for a {pendingRequests[0].part} for {pendingRequests[0].vehicle}.
+              </p>
+            </div>
+            <ChevronRight size={20} className="text-amber-400" />
+          </Card>
+        )}
 
         {/* Recent Orders */}
         <div className="space-y-4">

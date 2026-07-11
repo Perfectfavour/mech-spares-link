@@ -1,3 +1,4 @@
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, Camera, Store, MapPin, Clock, ShieldCheck } from 'lucide-react';
 import MobileContainer from '@/components/layout/MobileContainer';
@@ -6,13 +7,43 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { toast } from 'sonner';
+import { useApp } from '@/context/AppContext';
 
 export default function ShopProfile() {
   const navigate = useNavigate();
+  const { profile, updateProfile } = useApp();
 
-  const handleSave = () => {
-    toast.success('Shop profile updated!');
-    navigate(-1);
+  const [storeName, setStoreName] = useState('');
+  const [location, setLocation] = useState('');
+  const [bio, setBio] = useState('');
+  const [openingTime, setOpeningTime] = useState('');
+  const [closingTime, setClosingTime] = useState('');
+
+  useEffect(() => {
+    if (profile) {
+      setStoreName(profile.store_name || profile.full_name || '');
+      setLocation(profile.location || '');
+      setBio(profile.bio || '');
+      setOpeningTime(profile.opening_time || '08:00 AM');
+      setClosingTime(profile.closing_time || '06:00 PM');
+    }
+  }, [profile]);
+
+  const handleSave = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      await updateProfile({
+        store_name: storeName,
+        location,
+        bio,
+        opening_time: openingTime,
+        closing_time: closingTime,
+      });
+      toast.success('Shop profile updated!');
+      navigate(-1);
+    } catch (err) {
+      toast.error('Failed to update shop profile.');
+    }
   };
 
   return (
@@ -42,17 +73,29 @@ export default function ShopProfile() {
           </div>
         </div>
 
-        <form className="space-y-6">
+        <form onSubmit={handleSave} className="space-y-6">
           <div className="space-y-2">
             <Label htmlFor="shopName">Shop Name</Label>
-            <Input id="shopName" defaultValue="Abuja Auto Parts" className="h-14 rounded-xl px-4" />
+            <Input 
+              id="shopName" 
+              value={storeName} 
+              onChange={(e) => setStoreName(e.target.value)} 
+              className="h-14 rounded-xl px-4" 
+              required
+            />
           </div>
 
           <div className="space-y-2">
             <Label htmlFor="location">Location</Label>
             <div className="relative">
               <MapPin className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground" size={18} />
-              <Input id="location" defaultValue="Gudu Market, Shop 45" className="h-14 rounded-xl pl-12" />
+              <Input 
+                id="location" 
+                value={location} 
+                onChange={(e) => setLocation(e.target.value)} 
+                className="h-14 rounded-xl pl-12" 
+                required
+              />
             </div>
           </div>
 
@@ -60,7 +103,8 @@ export default function ShopProfile() {
             <Label htmlFor="bio">About the Shop</Label>
             <Textarea 
               id="bio" 
-              defaultValue="Specialists in Toyota and Honda spare parts. Genuine items only. Fast delivery across Abuja." 
+              value={bio} 
+              onChange={(e) => setBio(e.target.value)} 
               className="min-h-[120px] rounded-2xl p-4"
             />
           </div>
@@ -70,14 +114,22 @@ export default function ShopProfile() {
               <Label>Opening Time</Label>
               <div className="relative">
                 <Clock className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground" size={18} />
-                <Input defaultValue="08:00 AM" className="h-14 rounded-xl pl-12" />
+                <Input 
+                  value={openingTime} 
+                  onChange={(e) => setOpeningTime(e.target.value)} 
+                  className="h-14 rounded-xl pl-12" 
+                />
               </div>
             </div>
             <div className="space-y-2">
               <Label>Closing Time</Label>
               <div className="relative">
                 <Clock className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground" size={18} />
-                <Input defaultValue="06:00 PM" className="h-14 rounded-xl pl-12" />
+                <Input 
+                  value={closingTime} 
+                  onChange={(e) => setClosingTime(e.target.value)} 
+                  className="h-14 rounded-xl pl-12" 
+                />
               </div>
             </div>
           </div>
@@ -90,7 +142,7 @@ export default function ShopProfile() {
             </div>
           </div>
 
-          <Button type="button" size="xl" className="w-full font-bold" onClick={handleSave}>
+          <Button type="submit" size="xl" className="w-full font-bold">
             Save Profile
           </Button>
         </form>

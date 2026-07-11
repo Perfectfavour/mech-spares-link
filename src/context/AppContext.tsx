@@ -12,6 +12,7 @@ interface AppState {
   user: any | null;
   profile: any | null;
   setProfile: (profile: any) => void;
+  updateProfile: (updates: any) => Promise<void>;
   cart: any[];
   addToCart: (item: any) => void;
   removeFromCart: (idx: number) => void;
@@ -33,6 +34,8 @@ interface AppState {
   products: any[];
   fetchProducts: () => Promise<void>;
   addProduct: (product: any) => Promise<void>;
+  updateProduct: (productId: string, updates: any) => Promise<void>;
+  deleteProduct: (productId: string) => Promise<void>;
 }
 
 const fallbackAppState: AppState = {
@@ -43,6 +46,7 @@ const fallbackAppState: AppState = {
   user: null,
   profile: null,
   setProfile: () => undefined,
+  updateProfile: async () => undefined,
   cart: [],
   addToCart: () => undefined,
   removeFromCart: () => undefined,
@@ -64,6 +68,8 @@ const fallbackAppState: AppState = {
   products: seededProducts,
   fetchProducts: async () => undefined,
   addProduct: async () => undefined,
+  updateProduct: async () => undefined,
+  deleteProduct: async () => undefined,
 };
 
 const AppContext = createContext<AppState>(fallbackAppState);
@@ -140,6 +146,10 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       localStorage.setItem(STORAGE_PREFIX + 'profile', JSON.stringify(profile));
     }
   }, [profile]);
+
+  useEffect(() => {
+    localStorage.setItem(STORAGE_PREFIX + 'messages', JSON.stringify(messages));
+  }, [messages]);
 
   useEffect(() => {
     if (!localStorage.getItem(STORAGE_PREFIX + 'profile')) {
@@ -243,15 +253,66 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       const { data, error } = await supabase
         .from('profiles')
         .select('*')
-        .eq('id', userId)
-        .single();
-      if (data) {
-        setProfile(data);
-      } else if (error) {
+        .eq('id', userId);
+      
+      if (error) {
         console.error('Error fetching profile:', error);
+        return;
+      }
+
+      if (data && data.length > 0) {
+        setProfile(data[0]);
+      } else {
+        console.warn('Profile not found in database for user:', userId);
+        
+        // Auto-create a default profile in the database so the user profile exists
+        try {
+          const { data: { user: currentUser } } = await supabase.auth.getUser();
+          if (currentUser) {
+            const defaultProfile = {
+              id: userId,
+              full_name: currentUser.user_metadata?.full_name || currentUser.email?.split('@')[0] || 'User',
+              role: currentUser.user_metadata?.role || 'mechanic',
+              workshop_name: currentUser.user_metadata?.role === 'mechanic' ? 'Precision Motors' : null,
+              store_name: currentUser.user_metadata?.role === 'seller' ? 'Abuja Parts Hub' : null,
+              location: 'Abuja, Nigeria',
+            };
+            
+            const { error: insertError } = await supabase
+              .from('profiles')
+              .insert([defaultProfile]);
+            
+            if (!insertError) {
+              setProfile(defaultProfile);
+            } else {
+              console.warn('Failed to insert default profile in db, using local fallback:', insertError);
+              setProfile(defaultProfile);
+            }
+          }
+        } catch (authErr) {
+          console.error('Failed to get current user details for default profile:', authErr);
+        }
       }
     } catch (e) {
-      console.error(e);
+      console.error('Unexpected error fetching profile:', e);
+    }
+  };
+
+  const updateProfile = async (updates: any) => {
+    // Merge updates with current profile
+    const updatedProfile = { ...profile, ...updates };
+    setProfile(updatedProfile);
+
+    if (isSupabaseActive && user) {
+      try {
+        const { error } = await supabase
+          .from('profiles')
+          .update(updates)
+          .eq('id', user.id);
+        if (error) throw error;
+      } catch (e) {
+        console.error('Error updating profile in DB:', e);
+      }
     }
   };
 
@@ -292,10 +353,17 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   const fetchProducts = async () => {
     if (!isSupabaseActive) return;
     try {
-      const { data } = await supabase.from('products').select('*');
+      const { data } = await supabase
+        .from('products')
+        .select('*, profiles(store_name, full_name, location)');
       if (data && data.length > 0) {
-        setProducts(data);
-        localStorage.setItem(STORAGE_PREFIX + 'products', JSON.stringify(data));
+        const mapped = data.map((p: any) => ({
+          ...p,
+          seller: p.profiles?.store_name || p.profiles?.full_name || 'Abuja Supplier',
+          location: p.profiles?.location || 'Gudu Market',
+        }));
+        setProducts(mapped);
+        localStorage.setItem(STORAGE_PREFIX + 'products', JSON.stringify(mapped));
       }
     } catch (e) {
       console.error(e);
@@ -341,6 +409,57 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     localStorage.setItem(STORAGE_PREFIX + 'products', JSON.stringify(updated));
   };
 
+  const updateProduct = async (productId: string, updates: any) => {
+    if (isSupabaseActive && user) {
+      try {
+        const { data, error } = await supabase
+          .from('products')
+          .update({
+            name: updates.name,
+            price: Number(updates.price),
+            category: updates.category,
+            stock: Number(updates.stock),
+            image_url: updates.image || updates.image_url || updates.image_url,
+            description: updates.description,
+            specs: updates.specs || [],
+          })
+          .eq('id', productId)
+          .select();
+        if (error) throw error;
+        if (data && data.length > 0) {
+          setProducts((prev) =>
+            prev.map((p) => (p.id === productId ? { ...p, ...data[0] } : p))
+          );
+        }
+      } catch (e) {
+        console.error('Error updating product:', e);
+        throw e;
+      }
+    } else {
+      setProducts((prev) =>
+        prev.map((p) => (p.id === productId ? { ...p, ...updates } : p))
+      );
+    }
+  };
+
+  const deleteProduct = async (productId: string) => {
+    if (isSupabaseActive && user) {
+      try {
+        const { error } = await supabase
+          .from('products')
+          .delete()
+          .eq('id', productId);
+        if (error) throw error;
+        setProducts((prev) => prev.filter((p) => p.id !== productId));
+      } catch (e) {
+        console.error('Error deleting product:', e);
+        throw e;
+      }
+    } else {
+      setProducts((prev) => prev.filter((p) => p.id !== productId));
+    }
+  };
+
   // CART ACTIONS
   const addToCart = (item: any) => {
     setCart((prev) => {
@@ -370,13 +489,13 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   const fetchOrders = async () => {
     if (!isSupabaseActive || !user) return;
     try {
-      // Query orders where buyer_id = user.id
+      // Query orders where buyer_id = user.id or seller_id = user.id
       const { data } = await supabase
         .from('orders')
-        .select(`*, order_items(*, products(*))`)
+        .select(`*, profiles:buyer_id(full_name, workshop_name), order_items(*, products(*))`)
         .order('created_at', { ascending: false });
       if (data) {
-        const mapped = data.map((o) => ({
+        const mapped = data.map((o: any) => ({
           id: o.id,
           date: o.created_at.split('T')[0],
           status: o.status,
@@ -384,12 +503,16 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
           deliveryAddress: o.delivery_address,
           deliveryMethod: o.delivery_method,
           paymentMethod: o.payment_method,
+          buyer_id: o.buyer_id,
+          buyer_name: o.profiles?.workshop_name || o.profiles?.full_name || 'Mechanic',
+          buyer_workshop: o.profiles?.workshop_name || 'Precision Motors',
           items: o.order_items.map((item: any) => ({
             id: item.product_id,
             name: item.products?.name || 'Spare Part',
             price: item.price,
             quantity: item.quantity,
             image: item.products?.image_url,
+            seller_id: item.products?.seller_id,
           })),
         }));
         setOrders(mapped);
@@ -504,11 +627,13 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     try {
       const { data } = await supabase
         .from('requests')
-        .select('*')
+        .select('*, profiles(full_name, workshop_name)')
         .order('created_at', { ascending: false });
       if (data) {
-        const mapped = data.map((r) => ({
+        const mapped = data.map((r: any) => ({
           id: r.id,
+          mechanic_id: r.mechanic_id,
+          customer: r.profiles?.workshop_name || r.profiles?.full_name || 'Mechanic',
           vehicle: r.vehicle,
           part: r.part,
           description: r.description,
@@ -651,7 +776,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     try {
       const { data } = await supabase
         .from('messages')
-        .select('*')
+        .select('*, sender:sender_id(full_name, store_name, workshop_name), receiver:receiver_id(full_name, store_name, workshop_name)')
         .or(`sender_id.eq.${user.id},receiver_id.eq.${user.id}`)
         .order('created_at', { ascending: true });
       if (data) {
@@ -885,6 +1010,9 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         products,
         fetchProducts,
         addProduct,
+        updateProduct,
+        deleteProduct,
+        updateProfile,
       }}
     >
       {children}

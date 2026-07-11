@@ -3,6 +3,7 @@ import { ArrowLeft, Package, Truck, CheckCircle2, MapPin, Phone, MessageSquare }
 import MobileContainer from '@/components/layout/MobileContainer';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { useApp } from '@/context/AppContext';
 
 const steps = [
   { id: 1, label: 'Order Confirmed', icon: Package, time: '10:30 AM', status: 'completed' },
@@ -15,6 +16,10 @@ const steps = [
 export default function OrderTracking() {
   const { id } = useParams();
   const navigate = useNavigate();
+  const { orders } = useApp();
+
+  const order = orders.find((o) => o.id === id);
+  const sellerId = order?.items?.[0]?.seller_id || 'seller-seed';
 
   return (
     <MobileContainer>
@@ -82,7 +87,7 @@ export default function OrderTracking() {
             </div>
             <div className="flex gap-2">
               <button className="bg-primary/10 text-primary p-3 rounded-2xl"><Phone size={20} /></button>
-              <button className="bg-primary/10 text-primary p-3 rounded-2xl" onClick={() => navigate('/messages?recipientId=seller-seed')}><MessageSquare size={20} /></button>
+              <button className="bg-primary/10 text-primary p-3 rounded-2xl" onClick={() => navigate(`/messages?recipientId=${sellerId}`)}><MessageSquare size={20} /></button>
             </div>
           </div>
           

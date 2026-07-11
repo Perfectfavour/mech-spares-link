@@ -157,12 +157,14 @@ CREATE POLICY "Sellers can manage their own products" ON public.products FOR ALL
     USING (auth.uid() = seller_id)
     WITH CHECK (auth.uid() = seller_id);
 
+CREATE POLICY "Requests are readable by authenticated users" ON public.requests FOR SELECT TO authenticated USING (true);
 CREATE POLICY "Mechanics can manage their own requests" ON public.requests FOR ALL TO authenticated
     USING (auth.uid() = mechanic_id)
     WITH CHECK (auth.uid() = mechanic_id);
 CREATE POLICY "Sellers can update request status" ON public.requests FOR UPDATE TO authenticated
     USING (EXISTS (SELECT 1 FROM public.offers o WHERE o.request_id = requests.id AND o.seller_id = auth.uid()));
 
+CREATE POLICY "Offers are readable by authenticated users" ON public.offers FOR SELECT TO authenticated USING (true);
 CREATE POLICY "Sellers can manage their own offers" ON public.offers FOR ALL TO authenticated
     USING (auth.uid() = seller_id)
     WITH CHECK (auth.uid() = seller_id);
@@ -190,16 +192,7 @@ CREATE POLICY "Order participants can update orders" ON public.orders FOR UPDATE
         )
     );
 
-CREATE POLICY "Users can view order items relevant to them" ON public.order_items FOR SELECT TO authenticated
-    USING (
-        EXISTS (
-            SELECT 1 FROM public.orders o
-            WHERE o.id = order_items.order_id AND o.buyer_id = auth.uid()
-        ) OR EXISTS (
-            SELECT 1 FROM public.products p
-            WHERE p.id = order_items.product_id AND p.seller_id = auth.uid()
-        )
-    );
+CREATE POLICY "Order items are readable by authenticated users" ON public.order_items FOR SELECT TO authenticated USING (true);
 CREATE POLICY "Buyers can insert order items" ON public.order_items FOR INSERT TO authenticated
     WITH CHECK (
         EXISTS (

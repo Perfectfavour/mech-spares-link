@@ -1,17 +1,42 @@
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Package, MapPin, Phone, MessageSquare, Truck, CheckCircle2 } from 'lucide-react';
+import { ArrowLeft, MapPin, Phone, MessageSquare } from 'lucide-react';
 import MobileContainer from '@/components/layout/MobileContainer';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
+import { useApp } from '@/context/AppContext';
 
 export default function SellerOrderDetails() {
   const { id } = useParams();
   const navigate = useNavigate();
+  const { orders } = useApp();
+
+  const order = orders.find((o) => o.id === id);
 
   const handleAccept = () => {
     toast.success('Order accepted! Please prepare the items.');
   };
+
+  if (!order) {
+    return (
+      <MobileContainer>
+        <div className="p-6 flex items-center gap-4 sticky top-0 bg-background z-10">
+          <button onClick={() => navigate(-1)} className="text-foreground">
+            <ArrowLeft size={24} />
+          </button>
+          <h1 className="text-xl font-bold">Order Not Found</h1>
+        </div>
+        <div className="p-6 text-center text-muted-foreground">
+          Could not locate order {id}.
+        </div>
+      </MobileContainer>
+    );
+  }
+
+  // Calculate items total
+  const itemsTotal = order.items?.reduce((sum: number, item: any) => sum + (item.price * item.quantity), 0) || 0;
+  const deliveryCost = 2500; // standard mock cost
+  const grandTotal = itemsTotal + deliveryCost;
 
   return (
     <MobileContainer>
@@ -26,10 +51,10 @@ export default function SellerOrderDetails() {
         <div className="flex justify-between items-start">
           <div className="space-y-1">
             <h2 className="text-2xl font-black">{id}</h2>
-            <p className="text-sm text-muted-foreground font-medium">Placed Today, 10:45 AM</p>
+            <p className="text-sm text-muted-foreground font-medium">Placed: {order.date}</p>
           </div>
           <span className="bg-primary text-white text-[10px] font-black px-4 py-1.5 rounded-full uppercase shadow-lg shadow-primary/20">
-            New Order
+            {order.status || 'New'}
           </span>
         </div>
 
@@ -38,16 +63,16 @@ export default function SellerOrderDetails() {
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
               <div className="w-14 h-14 bg-primary/10 rounded-2xl flex items-center justify-center text-primary font-bold text-xl">
-                P
+                {(order.buyer_name || 'M').charAt(0)}
               </div>
               <div>
-                <h4 className="font-bold">Precision Motors</h4>
-                <p className="text-xs text-muted-foreground">Main Mechanic: John Doe</p>
+                <h4 className="font-bold">{order.buyer_workshop || 'Precision Motors'}</h4>
+                <p className="text-xs text-muted-foreground">Contact: {order.buyer_name || 'Mechanic'}</p>
               </div>
             </div>
             <div className="flex gap-2">
               <button className="bg-primary/10 text-primary p-3 rounded-2xl"><Phone size={20} /></button>
-              <button className="bg-primary/10 text-primary p-3 rounded-2xl" onClick={() => navigate('/messages?recipientId=mech-seed')}><MessageSquare size={20} /></button>
+              <button className="bg-primary/10 text-primary p-3 rounded-2xl" onClick={() => navigate(`/messages?recipientId=${order.buyer_id || 'mech-seed'}`)}><MessageSquare size={20} /></button>
             </div>
           </div>
           
@@ -55,7 +80,7 @@ export default function SellerOrderDetails() {
             <MapPin size={20} className="text-primary mt-1" />
             <div className="flex-1">
               <p className="text-[10px] text-muted-foreground font-medium uppercase tracking-wider">Delivery Address</p>
-              <p className="text-sm font-bold leading-snug">Plot 124, Gudu District, Near Central Mosque, Abuja</p>
+              <p className="text-sm font-bold leading-snug">{order.deliveryAddress || 'Abuja, Nigeria'}</p>
             </div>
           </div>
         </Card>
@@ -64,30 +89,20 @@ export default function SellerOrderDetails() {
         <div className="space-y-4">
           <h3 className="font-bold text-lg px-1">Order Items</h3>
           <Card className="p-2 rounded-[32px] border border-border overflow-hidden">
-            <div className="p-4 flex gap-4 border-b border-border/50">
-              <div className="w-16 h-16 rounded-2xl bg-muted overflow-hidden">
-                <img src="https://storage.googleapis.com/dala-prod-public-storage/generated-images/f7177dcb-d482-413c-a72a-aaa68b86c5a9/product-brake-pads-ffa5f246-1783313457127.webp" className="w-full h-full object-cover" alt="" />
-              </div>
-              <div className="flex-1 flex flex-col justify-center">
-                <h4 className="font-bold text-sm">Brake Pads - Toyota Camry</h4>
-                <div className="flex justify-between items-center mt-1">
-                  <p className="text-xs text-muted-foreground">Qty: 1</p>
-                  <p className="font-bold text-sm">₦12,500</p>
+            {order.items?.map((item: any, idx: number) => (
+              <div key={item.id || idx} className={`p-4 flex gap-4 ${idx < order.items.length - 1 ? 'border-b border-border/50' : ''}`}>
+                <div className="w-16 h-16 rounded-2xl bg-muted overflow-hidden">
+                  <img src={item.image || "https://images.unsplash.com/photo-1486006920555-c77dce18193b?auto=format&fit=crop&w=200&q=80"} className="w-full h-full object-cover" alt={item.name} />
+                </div>
+                <div className="flex-1 flex flex-col justify-center">
+                  <h4 className="font-bold text-sm">{item.name}</h4>
+                  <div className="flex justify-between items-center mt-1">
+                    <p className="text-xs text-muted-foreground">Qty: {item.quantity}</p>
+                    <p className="font-bold text-sm">₦{(item.price || 0).toLocaleString()}</p>
+                  </div>
                 </div>
               </div>
-            </div>
-            <div className="p-4 flex gap-4">
-              <div className="w-16 h-16 rounded-2xl bg-muted overflow-hidden">
-                <img src="https://storage.googleapis.com/dala-prod-public-storage/generated-images/f7177dcb-d482-413c-a72a-aaa68b86c5a9/product-alternator-efc846f3-1783313457481.webp" className="w-full h-full object-cover" alt="" />
-              </div>
-              <div className="flex-1 flex flex-col justify-center">
-                <h4 className="font-bold text-sm">Oil Filter - Toyota Camry</h4>
-                <div className="flex justify-between items-center mt-1">
-                  <p className="text-xs text-muted-foreground">Qty: 2</p>
-                  <p className="font-bold text-sm">₦12,000</p>
-                </div>
-              </div>
-            </div>
+            ))}
           </Card>
         </div>
 
@@ -95,15 +110,15 @@ export default function SellerOrderDetails() {
         <div className="space-y-3 px-1">
           <div className="flex justify-between text-sm">
             <span className="text-muted-foreground">Items Total</span>
-            <span className="font-bold">₦24,500</span>
+            <span className="font-bold">₦{itemsTotal.toLocaleString()}</span>
           </div>
           <div className="flex justify-between text-sm">
             <span className="text-muted-foreground">Delivery</span>
-            <span className="font-bold">₦2,500</span>
+            <span className="font-bold">₦{deliveryCost.toLocaleString()}</span>
           </div>
           <div className="flex justify-between text-lg pt-3 border-t border-border">
             <span className="font-bold">Grand Total</span>
-            <span className="font-black text-primary">₦27,000</span>
+            <span className="font-black text-primary">₦{grandTotal.toLocaleString()}</span>
           </div>
         </div>
       </div>

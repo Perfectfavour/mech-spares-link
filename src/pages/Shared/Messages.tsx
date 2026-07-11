@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useMemo, useState, useEffect, useRef } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Search, ArrowLeft, SendHorizonal } from 'lucide-react';
 import MobileContainer from '@/components/layout/MobileContainer';
@@ -6,22 +6,36 @@ import BottomNav from '@/components/layout/BottomNav';
 import { Input } from '@/components/ui/input';
 import { Card } from '@/components/ui/card';
 import { useApp } from '@/context/AppContext';
-
-const getDisplayName = (peerId: string) => {
-  if (peerId === 'seller-seed') return 'Abuja Auto Parts';
-  if (peerId === 'mech-seed') return 'Precision Motors';
-  return 'Contact';
-};
+import { supabase } from '@/lib/supabase';
 
 export default function Messages() {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
-  const { messages, user, profile, sendMessage } = useApp();
+  const { messages, user, profile, sendMessage, isSupabaseActive } = useApp();
   const [query, setQuery] = useState('');
   const [draft, setDraft] = useState('');
+  const [recipientNames, setRecipientNames] = useState<Record<string, string>>({
+    'seller-seed': 'Abuja Auto Parts',
+    'mech-seed': 'Precision Motors',
+  });
 
   const currentUserId = user?.id || profile?.id || 'mech-seed';
   const recipientId = searchParams.get('recipientId');
+  const messagesEndRef = useRef<HTMLDivElement | null>(null);
+
+  // Pre-populate cache from messages join profiles
+  useEffect(() => {
+    messages.forEach((message: any) => {
+      const p = message.sender_id === currentUserId ? message.receiver : message.sender;
+      const peerId = message.sender_id === currentUserId ? message.receiver_id : message.sender_id;
+      if (p && peerId && !recipientNames[peerId]) {
+        const name = p.store_name || p.workshop_name || p.full_name;
+        if (name) {
+          setRecipientNames(prev => ({ ...prev, [peerId]: name }));
+        }
+      }
+    });
+  }, [messages, currentUserId]);
 
   const chats = useMemo(() => {
     const map = new Map<string, any>();
@@ -30,9 +44,12 @@ export default function Messages() {
       const peerId = message.sender_id === currentUserId ? message.receiver_id : message.sender_id;
       if (!peerId || peerId === currentUserId) return;
 
+      const peerProfile = message.sender_id === currentUserId ? message.receiver : message.sender;
+      const peerName = peerProfile?.store_name || peerProfile?.workshop_name || peerProfile?.full_name || recipientNames[peerId] || 'Contact';
+
       const existing = map.get(peerId) || {
         id: peerId,
-        name: getDisplayName(peerId),
+        name: peerName,
         lastMsg: message.content,
         time: message.created_at ? new Date(message.created_at).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }) : 'Now',
         unread: 0,
@@ -46,9 +63,35 @@ export default function Messages() {
     return Array.from(map.values()).filter((chat) =>
       chat.name.toLowerCase().includes(query.toLowerCase()) || chat.lastMsg.toLowerCase().includes(query.toLowerCase())
     );
-  }, [currentUserId, messages, query]);
+  }, [currentUserId, messages, query, recipientNames]);
 
   const selectedRecipient = recipientId || chats[0]?.id || null;
+
+  // Auto-fetch profile name for selected recipient if not cached
+  useEffect(() => {
+    if (!selectedRecipient) return;
+    if (recipientNames[selectedRecipient]) return;
+
+    const foundChat = chats.find(c => c.id === selectedRecipient);
+    if (foundChat) {
+      setRecipientNames(prev => ({ ...prev, [selectedRecipient]: foundChat.name }));
+      return;
+    }
+
+    if (isSupabaseActive) {
+      supabase
+        .from('profiles')
+        .select('full_name, store_name, workshop_name')
+        .eq('id', selectedRecipient)
+        .then(({ data }) => {
+          if (data && data.length > 0) {
+            const name = data[0].store_name || data[0].workshop_name || data[0].full_name || 'Contact';
+            setRecipientNames(prev => ({ ...prev, [selectedRecipient]: name }));
+          }
+        });
+    }
+  }, [selectedRecipient, chats, isSupabaseActive]);
+
   const thread = useMemo(() => {
     if (!selectedRecipient) return [];
     return messages.filter((message: any) => {
@@ -57,6 +100,11 @@ export default function Messages() {
       return isFromSelected || isToSelected;
     });
   }, [currentUserId, messages, selectedRecipient]);
+
+  // Scroll to bottom on thread change
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [thread]);
 
   const handleSend = async () => {
     if (!draft.trim() || !selectedRecipient) return;
@@ -113,40 +161,62 @@ export default function Messages() {
         </div>
 
         {selectedRecipient ? (
-          <div className="rounded-[32px] border border-border bg-card p-4 space-y-4">
+          <div className="rounded-[32px] border border-border bg-card p-5 space-y-4 shadow-md">
             <div className="border-b border-border pb-3">
-              <h2 className="font-bold">{getDisplayName(selectedRecipient)}</h2>
-              <p className="text-sm text-muted-foreground">Start or continue the conversation</p>
+              <h2 className="font-bold text-lg">{recipientNames[selectedRecipient] || 'Contact'}</h2>
+              <p className="text-xs text-muted-foreground">Start or continue the conversation</p>
             </div>
 
-            <div className="space-y-3 max-h-72 overflow-y-auto pr-2">
-              {thread.length === 0 ? (
-                <p className="text-sm text-muted-foreground">No messages yet. Send the first message to start the conversation.</p>
-              ) : thread.map((message: any) => (
-                <div key={message.id} className={`flex ${message.sender_id === currentUserId ? 'justify-end' : 'justify-start'}`}>
-                  <div className={`max-w-[80%] rounded-2xl px-3 py-2 text-sm ${message.sender_id === currentUserId ? 'bg-primary text-primary-foreground' : 'bg-muted text-foreground'}`}>
-                    {message.content}
+            <div className="flex flex-col h-[380px] justify-between">
+              <div className="flex-1 space-y-3 overflow-y-auto pr-2 pb-4">
+                {thread.length === 0 ? (
+                  <div className="h-full flex items-center justify-center text-center p-6">
+                    <p className="text-sm text-muted-foreground">No messages yet. Send the first message to start the conversation.</p>
                   </div>
-                </div>
-              ))}
-            </div>
+                ) : (
+                  thread.map((message: any) => {
+                    const isSelf = message.sender_id === currentUserId;
+                    const timeString = message.created_at
+                      ? new Date(message.created_at).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })
+                      : 'Just now';
+                    return (
+                      <div key={message.id} className={`flex ${isSelf ? 'justify-end' : 'justify-start'}`}>
+                        <div className="flex flex-col max-w-[80%] space-y-1">
+                          <div className={`rounded-2xl px-4 py-2.5 text-sm shadow-sm transition-all duration-200 ${
+                            isSelf 
+                              ? 'bg-primary text-primary-foreground rounded-tr-sm hover:bg-primary/95' 
+                              : 'bg-muted text-foreground rounded-tl-sm hover:bg-muted/90'
+                          }`}>
+                            {message.content}
+                          </div>
+                          <span className={`text-[9px] text-muted-foreground/80 px-1 ${isSelf ? 'text-right' : 'text-left'}`}>
+                            {timeString}
+                          </span>
+                        </div>
+                      </div>
+                    );
+                  })
+                )}
+                <div ref={messagesEndRef} />
+              </div>
 
-            <div className="flex items-center gap-2">
-              <Input
-                value={draft}
-                onChange={(e) => setDraft(e.target.value)}
-                placeholder="Type a message..."
-                className="h-12 rounded-2xl"
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter') {
-                    e.preventDefault();
-                    handleSend();
-                  }
-                }}
-              />
-              <button onClick={handleSend} className="h-12 w-12 rounded-2xl bg-primary text-white flex items-center justify-center">
-                <SendHorizonal size={18} />
-              </button>
+              <div className="flex items-center gap-2 pt-4 border-t border-border/40">
+                <Input
+                  value={draft}
+                  onChange={(e) => setDraft(e.target.value)}
+                  placeholder="Type a message..."
+                  className="h-12 rounded-2xl bg-muted/30 border-border"
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      e.preventDefault();
+                      handleSend();
+                    }
+                  }}
+                />
+                <button onClick={handleSend} className="h-12 w-12 rounded-2xl bg-primary text-white flex items-center justify-center active:scale-[0.95] transition-transform">
+                  <SendHorizonal size={18} />
+                </button>
+              </div>
             </div>
           </div>
         ) : null}
