@@ -1,18 +1,68 @@
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { User, MapPin, Settings, Bell, Shield, LogOut, ChevronRight, Store, Wrench } from 'lucide-react';
+import { User, MapPin, Settings, Bell, Shield, LogOut, ChevronRight, Store, Wrench, Phone } from 'lucide-react';
 import MobileContainer from '@/components/layout/MobileContainer';
 import BottomNav from '@/components/layout/BottomNav';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
 import { useApp } from '@/context/AppContext';
+import { toast } from 'sonner';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
 
 export default function Profile() {
   const navigate = useNavigate();
-  const { role, setRole, signOutUser, profile } = useApp();
+  const { role, setRole, signOutUser, profile, user, updateProfile } = useApp();
+
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [fullName, setFullName] = useState('');
+  const [workshopName, setWorkshopName] = useState('');
+  const [location, setLocation] = useState('');
+  const [phone, setPhone] = useState('');
+  const [bio, setBio] = useState('');
+
+  useEffect(() => {
+    if (profile && role === 'mechanic') {
+      setFullName(profile.full_name || '');
+      setWorkshopName(profile.workshop_name || '');
+      setLocation(profile.location || '');
+      setPhone(profile.phone || '');
+      setBio(profile.bio || '');
+    }
+  }, [profile, role]);
 
   const handleLogout = async () => {
     await signOutUser();
     navigate('/login');
+  };
+
+  const handleSave = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!fullName || !workshopName || !location) {
+      toast.error('Please fill in all required fields.');
+      return;
+    }
+
+    try {
+      await updateProfile({
+        full_name: fullName,
+        workshop_name: workshopName,
+        location,
+        phone,
+        bio,
+      });
+      toast.success('Profile updated successfully!');
+      setIsDialogOpen(false);
+    } catch (err) {
+      toast.error('Failed to update profile.');
+    }
   };
 
   const menuItems = [
@@ -35,7 +85,12 @@ export default function Profile() {
           </div>
           <div>
             <h2 className="text-xl font-bold">{profile?.full_name || 'John Doe'}</h2>
-            <p className="text-sm text-muted-foreground">{profile?.email || 'john.doe@workshop.com'}</p>
+            <p className="text-sm text-muted-foreground">{user?.email || 'john.doe@workshop.com'}</p>
+            {profile?.location && (
+              <p className="text-xs text-muted-foreground flex items-center justify-center gap-1 mt-1">
+                <MapPin size={12} /> {profile.location}
+              </p>
+            )}
           </div>
           <span className="bg-primary/10 text-primary text-[10px] font-black px-4 py-1.5 rounded-full uppercase tracking-widest">
             {role === 'mechanic' ? 'Certified Mechanic' : 'Verified Seller'}
@@ -52,7 +107,7 @@ export default function Profile() {
             </div>
           </div>
           <Button 
-            className="w-full rounded-2xl font-bold" 
+            className="w-full rounded-2xl font-bold animate-pulse" 
             variant="outline"
             onClick={() => {
               setRole(role === 'mechanic' ? 'seller' : 'mechanic');
@@ -68,7 +123,18 @@ export default function Profile() {
           {menuItems.map((item, i) => (
             <button 
               key={i} 
-              className="w-full p-5 bg-card rounded-[28px] border border-border flex items-center gap-4 active:scale-[0.98] transition-all"
+              onClick={() => {
+                if (item.label === 'Edit Profile') {
+                  if (role === 'seller') {
+                    navigate('/shop-profile');
+                  } else {
+                    setIsDialogOpen(true);
+                  }
+                } else {
+                  toast.info(`${item.label} feature is coming soon!`);
+                }
+              }}
+              className="w-full p-5 bg-card rounded-[28px] border border-border flex items-center gap-4 active:scale-[0.98] transition-all cursor-pointer"
             >
               <div className="w-10 h-10 rounded-xl bg-muted flex items-center justify-center text-muted-foreground">
                 <item.icon size={20} />
@@ -81,7 +147,7 @@ export default function Profile() {
 
         <button 
           onClick={handleLogout}
-          className="w-full p-5 flex items-center gap-4 text-destructive active:scale-[0.98] transition-all"
+          className="w-full p-5 flex items-center gap-4 text-destructive active:scale-[0.98] transition-all cursor-pointer"
         >
           <div className="w-10 h-10 rounded-xl bg-destructive/10 flex items-center justify-center">
             <LogOut size={20} />
@@ -89,6 +155,92 @@ export default function Profile() {
           <span className="font-bold text-sm">Sign Out</span>
         </button>
       </div>
+
+      {/* Edit Mechanic Profile Dialog */}
+      <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+        <DialogContent className="max-w-md rounded-[32px] border border-border p-6 shadow-2xl bg-card">
+          <DialogHeader className="border-b border-border pb-3">
+            <DialogTitle className="text-xl font-bold">Edit Mechanic Profile</DialogTitle>
+          </DialogHeader>
+
+          <form onSubmit={handleSave} className="space-y-4 pt-4">
+            <div className="space-y-1">
+              <Label htmlFor="mechName">Full Name *</Label>
+              <Input 
+                id="mechName" 
+                value={fullName} 
+                onChange={(e) => setFullName(e.target.value)} 
+                className="h-12 rounded-xl"
+                required 
+              />
+            </div>
+
+            <div className="space-y-1">
+              <Label htmlFor="workshopName">Workshop Name *</Label>
+              <Input 
+                id="workshopName" 
+                value={workshopName} 
+                onChange={(e) => setWorkshopName(e.target.value)} 
+                className="h-12 rounded-xl"
+                required 
+              />
+            </div>
+
+            <div className="space-y-1">
+              <Label htmlFor="mechLoc">Location Address *</Label>
+              <div className="relative">
+                <MapPin className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground" size={16} />
+                <Input 
+                  id="mechLoc" 
+                  value={location} 
+                  onChange={(e) => setLocation(e.target.value)} 
+                  className="h-12 rounded-xl pl-10"
+                  required 
+                />
+              </div>
+            </div>
+
+            <div className="space-y-1">
+              <Label htmlFor="mechPhone">Phone Number</Label>
+              <div className="relative">
+                <Phone className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground" size={16} />
+                <Input 
+                  id="mechPhone" 
+                  value={phone} 
+                  onChange={(e) => setPhone(e.target.value)} 
+                  className="h-12 rounded-xl pl-10"
+                />
+              </div>
+            </div>
+
+            <div className="space-y-1">
+              <Label htmlFor="mechBio">About/Bio</Label>
+              <Textarea 
+                id="mechBio" 
+                value={bio} 
+                onChange={(e) => setBio(e.target.value)} 
+                placeholder="Brief bio or details about your workshop's specialties..."
+                className="min-h-[100px] rounded-xl p-3"
+              />
+            </div>
+
+            <div className="flex gap-3 pt-4 border-t border-border/40">
+              <Button 
+                type="button" 
+                variant="outline" 
+                className="flex-1 rounded-xl h-12 cursor-pointer"
+                onClick={() => setIsDialogOpen(false)}
+              >
+                Cancel
+              </Button>
+              <Button type="submit" className="flex-[2] rounded-xl h-12 font-bold shadow-lg shadow-primary/20 cursor-pointer">
+                Save Changes
+              </Button>
+            </div>
+          </form>
+        </DialogContent>
+      </Dialog>
+
       <BottomNav />
     </MobileContainer>
   );
