@@ -22,6 +22,7 @@ export default function SellerDashboard() {
     id: req.id,
     customer: req.vehicle || 'Mechanic',
     part: req.part,
+    vehicle: req.vehicle,
     time: req.date || 'Just now',
   }));
 
@@ -75,7 +76,8 @@ export default function SellerDashboard() {
           <div className="flex-1">
             <h4 className="font-bold text-amber-900 leading-tight">New Part Request</h4>
             <p className="text-xs text-amber-700 mt-1">
-              {pendingRequests[0].customer} is looking for a {pendingRequests[0].part}.
+              {/* {pendingRequests[0].customer} is looking for a {pendingRequests[0].part}. */}
+              Customer is looking for a {pendingRequests[0].part} for {pendingRequests[0].vehicle}.
             </p>
           </div>
           <ChevronRight size={20} className="text-amber-400" />
