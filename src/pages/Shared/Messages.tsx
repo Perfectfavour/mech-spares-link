@@ -136,15 +136,15 @@ export default function Messages() {
           {chats.map((chat) => (
             <Card
               key={chat.id}
-              className={`p-4 rounded-[28px] border border-border flex items-center gap-4 active:scale-[0.98] transition-transform ${selectedRecipient === chat.id ? 'border-primary bg-primary/5' : ''}`}
+              className={`p-4 rounded-[28px] border border-border cursor-pointer flex items-center gap-4 active:scale-[0.98] transition-transform ${selectedRecipient === chat.id ? 'border-primary bg-primary/5' : ''}`}
               onClick={() => setSearchParams({ recipientId: chat.id })}
             >
               <div className="w-14 h-14 rounded-2xl bg-primary/10 flex items-center justify-center text-primary font-bold text-xl shrink-0">
                 {chat.name.charAt(0)}
               </div>
               <div className="flex-1 overflow-hidden">
-                <div className="flex justify-between items-center mb-1">
-                  <h4 className="font-bold text-sm truncate">{chat.name}</h4>
+                <div className="flex justify-between items-end mb-1">
+                  <h4 className="font-bold text-sm truncate mr-3">{chat.name}</h4>
                   <span className="text-[10px] text-muted-foreground">{chat.time}</span>
                 </div>
                 <div className="flex justify-between items-center">
@@ -213,7 +213,7 @@ export default function Messages() {
                     }
                   }}
                 />
-                <button onClick={handleSend} className="h-12 w-12 rounded-2xl bg-primary text-white flex items-center justify-center active:scale-[0.95] transition-transform">
+                <button onClick={handleSend} className="h-12 w-12 rounded-2xl cursor-pointer bg-primary text-white flex items-center justify-center active:scale-[0.95] transition-transform">
                   <SendHorizonal size={18} />
                 </button>
               </div>
