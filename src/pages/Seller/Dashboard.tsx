@@ -67,7 +67,7 @@ export default function SellerDashboard() {
         {/* Part Requests Signature Feature Notification */}
         <Card 
           className="p-5 bg-amber-50 border-2 border-amber-200 rounded-[32px] flex items-center gap-4 cursor-pointer active:scale-[0.98] transition-all"
-          onClick={() => navigate('/messages')}
+          onClick={() => navigate('/messages?recipientId=mech-seed')}
         >
           <div className="bg-amber-100 p-4 rounded-2xl text-amber-600">
             <MessageCircle size={32} />

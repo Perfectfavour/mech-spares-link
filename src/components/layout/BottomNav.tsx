@@ -10,7 +10,6 @@ export default function BottomNav() {
     { icon: Search, label: 'Search', path: '/search' },
     { icon: ClipboardList, label: 'Requests', path: '/orders' },
     { icon: MessageSquare, label: 'Chat', path: '/messages' },
-    { icon: Bell, label: 'Alerts', path: '/notifications' },
     { icon: User, label: 'Profile', path: '/profile' },
   ];
 
@@ -18,7 +17,6 @@ export default function BottomNav() {
     { icon: Home, label: 'Dashboard', path: '/' },
     { icon: Package, label: 'Inventory', path: '/inventory' },
     { icon: MessageSquare, label: 'Chat', path: '/messages' },
-    { icon: Bell, label: 'Alerts', path: '/notifications' },
     { icon: User, label: 'Profile', path: '/profile' },
   ];
 

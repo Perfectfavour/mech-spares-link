@@ -82,7 +82,7 @@ export default function OrderTracking() {
             </div>
             <div className="flex gap-2">
               <button className="bg-primary/10 text-primary p-3 rounded-2xl"><Phone size={20} /></button>
-              <button className="bg-primary/10 text-primary p-3 rounded-2xl"><MessageSquare size={20} /></button>
+              <button className="bg-primary/10 text-primary p-3 rounded-2xl" onClick={() => navigate('/messages?recipientId=seller-seed')}><MessageSquare size={20} /></button>
             </div>
           </div>
           

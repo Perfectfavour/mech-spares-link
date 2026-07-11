@@ -1,32 +1,22 @@
+import { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, BellRing, ChevronRight } from 'lucide-react';
 import MobileContainer from '@/components/layout/MobileContainer';
 import BottomNav from '@/components/layout/BottomNav';
 import { Card } from '@/components/ui/card';
-
-const notifications = [
-  {
-    id: 1,
-    title: 'New offer received',
-    message: 'A seller replied to your request for a Honda Accord alternator.',
-    time: '5 min ago',
-  },
-  {
-    id: 2,
-    title: 'Order confirmed',
-    message: 'Your brake pads order is now confirmed and being prepared.',
-    time: '1 hour ago',
-  },
-  {
-    id: 3,
-    title: 'Inventory updated',
-    message: 'Your shop profile is now visible to nearby mechanics.',
-    time: 'Yesterday',
-  },
-];
+import { Input } from '@/components/ui/input';
+import { seededNotifications } from '@/lib/seedData';
 
 export default function Notifications() {
   const navigate = useNavigate();
+  const [query, setQuery] = useState('');
+
+  const notifications = useMemo(() => {
+    return seededNotifications.filter((item) =>
+      item.title.toLowerCase().includes(query.toLowerCase()) ||
+      item.message.toLowerCase().includes(query.toLowerCase())
+    );
+  }, [query]);
 
   return (
     <MobileContainer hasBottomNav>
@@ -39,6 +29,15 @@ export default function Notifications() {
             <h1 className="text-2xl font-bold">Notifications</h1>
             <p className="text-sm text-muted-foreground">Stay updated on offers, orders, and activity.</p>
           </div>
+        </div>
+
+        <div className="relative">
+          <Input
+            placeholder="Search notifications..."
+            className="h-14 rounded-2xl pl-4 bg-card border-none shadow-sm"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+          />
         </div>
 
         <div className="space-y-3 pb-20">

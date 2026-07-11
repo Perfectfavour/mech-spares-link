@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, Camera, Upload, CheckCircle2 } from 'lucide-react';
 import MobileContainer from '@/components/layout/MobileContainer';
+import BottomNav from '@/components/layout/BottomNav';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -48,7 +49,7 @@ export default function RequestPart() {
   };
 
   return (
-    <MobileContainer>
+    <MobileContainer hasBottomNav>
       <div className="p-6 flex items-center gap-4">
         <button onClick={() => navigate(-1)} className="text-foreground">
           <ArrowLeft size={24} />
@@ -56,7 +57,7 @@ export default function RequestPart() {
         <h1 className="text-xl font-bold">Request a Part</h1>
       </div>
 
-      <div className="flex-1 p-6 flex flex-col">
+      <div className="flex-1 p-6 flex flex-col pb-24">
         {/* Progress Bar */}
         <div className="flex gap-2 mb-8">
           <div className={`h-1.5 flex-1 rounded-full ${step >= 1 ? 'bg-primary' : 'bg-muted'}`} />
@@ -140,6 +141,7 @@ export default function RequestPart() {
           </Button>
         </div>
       </div>
+      <BottomNav />
     </MobileContainer>
   );
 }

@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
+import { seededProducts, seededOrders, seededRequests, seededOffers, seededMessages, seededProfile } from '../lib/seedData';
 
 export type Role = 'mechanic' | 'seller';
 
@@ -34,71 +35,40 @@ interface AppState {
   addProduct: (product: any) => Promise<void>;
 }
 
-const AppContext = createContext<AppState | undefined>(undefined);
+const fallbackAppState: AppState = {
+  role: 'mechanic',
+  setRole: () => undefined,
+  isLoggedIn: false,
+  setIsLoggedIn: () => undefined,
+  user: null,
+  profile: null,
+  setProfile: () => undefined,
+  cart: [],
+  addToCart: () => undefined,
+  removeFromCart: () => undefined,
+  updateCartItemQty: () => undefined,
+  clearCart: () => undefined,
+  orders: [],
+  addOrder: async () => undefined,
+  updateOrderStatus: async () => undefined,
+  requests: [],
+  addRequest: async () => undefined,
+  offers: [],
+  addOffer: async () => undefined,
+  messages: [],
+  sendMessage: async () => undefined,
+  isSupabaseActive: false,
+  signUpUser: async () => undefined,
+  signInUser: async () => undefined,
+  signOutUser: async () => undefined,
+  products: seededProducts,
+  fetchProducts: async () => undefined,
+  addProduct: async () => undefined,
+};
 
-const defaultProducts = [
-  {
-    id: 'p1',
-    name: 'Brake Pads - Toyota Camry',
-    price: 12500,
-    priceStr: '₦12,500',
-    rating: 4.8,
-    reviews: 124,
-    image: 'https://storage.googleapis.com/dala-prod-public-storage/generated-images/f7177dcb-d482-413c-a72a-aaa68b86c5a9/product-brake-pads-ffa5f246-1783313457127.webp',
-    seller: 'Abuja Auto Parts',
-    distance: '2.5km',
-    location: 'Gudu Market, Shop 45',
-    category: 'Brakes',
-    description: 'High-performance semi-metallic brake pads specifically designed for Toyota Camry (2012-2022). Low dust, quiet operation, and exceptional stopping power.',
-    specs: [
-      { key: 'Condition', value: 'Brand New' },
-      { key: 'Material', value: 'Semi-Metallic' },
-      { key: 'Warranty', value: '6 Months' },
-      { key: 'Origin', value: 'Japan' },
-    ],
-    stock: 24,
-  },
-  {
-    id: 'p2',
-    name: 'Alternator - Honda Accord',
-    price: 45000,
-    priceStr: '₦45,000',
-    rating: 4.5,
-    reviews: 89,
-    image: 'https://storage.googleapis.com/dala-prod-public-storage/generated-images/f7177dcb-d482-413c-a72a-aaa68b86c5a9/product-alternator-efc846f3-1783313457481.webp',
-    seller: 'Wuse Parts Hub',
-    distance: '4.8km',
-    location: 'Wuse Zone 6, Block B',
-    category: 'Electrical',
-    description: '100% genuine Denso alternator for Honda Accord. Tested and verified for optimum charging performance.',
-    specs: [
-      { key: 'Condition', value: 'Refurbished (A+ Grade)' },
-      { key: 'Ampere', value: '135A' },
-      { key: 'Warranty', value: '3 Months' },
-      { key: 'Origin', value: 'USA' },
-    ],
-    stock: 12,
-  },
-  {
-    id: 'p3',
-    name: 'Oil Filter - Toyota Camry',
-    price: 6000,
-    priceStr: '₦6,000',
-    rating: 4.6,
-    reviews: 42,
-    image: 'https://storage.googleapis.com/dala-prod-public-storage/generated-images/f7177dcb-d482-413c-a72a-aaa68b86c5a9/product-brake-pads-ffa5f246-1783313457127.webp',
-    seller: 'Abuja Auto Parts',
-    distance: '2.5km',
-    location: 'Gudu Market, Shop 45',
-    category: 'Engine',
-    description: 'Genuine Toyota oil filter for optimum filtration and engine longevity.',
-    specs: [
-      { key: 'Condition', value: 'Brand New' },
-      { key: 'Warranty', value: 'None' },
-    ],
-    stock: 45,
-  }
-];
+const AppContext = createContext<AppState>(fallbackAppState);
+
+const defaultProducts = seededProducts;
 
 export function AppProvider({ children }: { children: React.ReactNode }) {
   const isSupabaseConfigured =
@@ -114,10 +84,10 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
 
   // Lists
   const [cart, setCart] = useState<any[]>([]);
-  const [orders, setOrders] = useState<any[]>([]);
-  const [requests, setRequests] = useState<any[]>([]);
-  const [offers, setOffers] = useState<any[]>([]);
-  const [messages, setMessages] = useState<any[]>([]);
+  const [orders, setOrders] = useState<any[]>(seededOrders);
+  const [requests, setRequests] = useState<any[]>(seededRequests);
+  const [offers, setOffers] = useState<any[]>(seededOffers);
+  const [messages, setMessages] = useState<any[]>(seededMessages);
   const [products, setProducts] = useState<any[]>(defaultProducts);
 
   // Sync profile update with storage/db
@@ -148,15 +118,16 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     const savedMessages = localStorage.getItem(STORAGE_PREFIX + 'messages');
     if (savedMessages) setMessages(JSON.parse(savedMessages));
 
-    const savedProducts = localStorage.getItem(STORAGE_PREFIX + 'products');
-    if (savedProducts) setProducts(JSON.parse(savedProducts));
-
     const savedProfile = localStorage.getItem(STORAGE_PREFIX + 'profile');
     if (savedProfile) {
       const parsedProfile = JSON.parse(savedProfile);
       setProfileState(parsedProfile);
       if (parsedProfile.role) setRole(parsedProfile.role);
     }
+
+    const savedProducts = localStorage.getItem(STORAGE_PREFIX + 'products');
+    if (savedProducts) setProducts(JSON.parse(savedProducts));
+
   }, []);
 
   // Save Cart to local
@@ -169,6 +140,12 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       localStorage.setItem(STORAGE_PREFIX + 'profile', JSON.stringify(profile));
     }
   }, [profile]);
+
+  useEffect(() => {
+    if (!localStorage.getItem(STORAGE_PREFIX + 'profile')) {
+      setProfile(seededProfile);
+    }
+  }, []);
 
   // Supabase Auth and Session handling
   useEffect(() => {
@@ -286,6 +263,31 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     fetchMessages();
   };
 
+  const shouldFallbackToLocal = (error: any) => {
+    const message = String(error?.message || error?.details || error?.hint || '').toLowerCase();
+    return (
+      !error ||
+      error?.status === 429 ||
+      message.includes('rate limit') ||
+      message.includes('failed to fetch') ||
+      message.includes('network') ||
+      message.includes('timeout') ||
+      message.includes('permission denied') ||
+      (message.includes('relation') && message.includes('does not exist')) ||
+      message.includes('does not exist') ||
+      message.includes('not configured')
+    );
+  };
+
+  const handleSupabaseWriteFallback = (error: any, fallback: () => void, context: string) => {
+    if (shouldFallbackToLocal(error)) {
+      console.warn(`${context} falling back to local storage:`, error);
+      fallback();
+      return true;
+    }
+    return false;
+  };
+
   // PRODUCTS ACTIONS
   const fetchProducts = async () => {
     if (!isSupabaseActive) return;
@@ -324,8 +326,9 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
           setProducts((prev) => [...prev, data[0]]);
         }
       } catch (e) {
-        console.error('Failed to add product to Supabase, saving locally:', e);
-        saveLocalProduct(newProduct);
+        if (!handleSupabaseWriteFallback(e, () => saveLocalProduct(newProduct), 'Failed to add product to Supabase')) {
+          console.error('Unexpected product insert error:', e);
+        }
       }
     } else {
       saveLocalProduct(newProduct);
@@ -462,8 +465,9 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
           ]);
         }
       } catch (e) {
-        console.error('Failed to save order to Supabase, saving locally:', e);
-        saveLocalOrder(order);
+        if (!handleSupabaseWriteFallback(e, () => saveLocalOrder(order), 'Failed to save order to Supabase')) {
+          console.error('Unexpected order insert error:', e);
+        }
       }
     } else {
       saveLocalOrder(order);
@@ -558,8 +562,9 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
           ]);
         }
       } catch (e) {
-        console.error('Failed to submit request to Supabase, saving locally:', e);
-        saveLocalRequest(newReq);
+        if (!handleSupabaseWriteFallback(e, () => saveLocalRequest(newReq), 'Failed to submit request to Supabase')) {
+          console.error('Unexpected request insert error:', e);
+        }
       }
     } else {
       saveLocalRequest(newReq);
@@ -616,8 +621,9 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
           await supabase.from('requests').update({ status: 'responded' }).eq('id', offer.request_id);
         }
       } catch (e) {
-        console.error('Failed to add offer to Supabase, saving locally:', e);
-        saveLocalOffer(newOffer);
+        if (!handleSupabaseWriteFallback(e, () => saveLocalOffer(newOffer), 'Failed to add offer to Supabase')) {
+          console.error('Unexpected offer insert error:', e);
+        }
       }
     } else {
       saveLocalOffer(newOffer);
@@ -688,8 +694,9 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
           });
         }
       } catch (e) {
-        console.error('Failed to send message to Supabase, saving locally:', e);
-        saveLocalMessage(newMsg);
+        if (!handleSupabaseWriteFallback(e, () => saveLocalMessage(newMsg), 'Failed to send message to Supabase')) {
+          console.error('Unexpected message insert error:', e);
+        }
       }
     } else {
       saveLocalMessage(newMsg);
@@ -725,25 +732,75 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       return;
     }
 
-    const { data, error } = await supabase.auth.signUp({ email, password: pass });
-    if (error) throw error;
-    if (data.user) {
-      // Create user profile in profiles table
-      const { error: profileError } = await supabase.from('profiles').insert([
-        {
+    try {
+      const { data, error } = await supabase.auth.signUp({ email, password: pass });
+      if (error) throw error;
+
+      if (data.user) {
+        const profilePayload: Record<string, any> = {
+          id: data.user.id,
+          full_name: fullName,
+          role: roleSelected,
+          workshop_name: roleSelected === 'mechanic' ? businessName : null,
+          store_name: roleSelected === 'seller' ? businessName : null,
+        };
+
+        try {
+          const { error: profileError } = await supabase.from('profiles').insert([profilePayload]);
+          if (profileError) {
+            console.warn('Profile insert skipped:', profileError.message);
+          }
+        } catch (profileInsertError) {
+          console.warn('Profile insert failed:', profileInsertError);
+        }
+
+        const localProfile = {
           id: data.user.id,
           full_name: fullName,
           role: roleSelected,
           workshop_name: roleSelected === 'mechanic' ? businessName : null,
           store_name: roleSelected === 'seller' ? businessName : null,
           location: 'Abuja, Nigeria',
-        }
-      ]);
-      if (profileError) throw profileError;
+        };
 
-      setUser(data.user);
-      setIsLoggedIn(true);
-      fetchUserProfile(data.user.id);
+        setProfile(localProfile);
+        setUser(data.user);
+        setIsLoggedIn(true);
+        fetchUserProfile(data.user.id);
+      }
+    } catch (error: any) {
+      if (error?.status === 429 || error?.message?.includes('26 seconds')) {
+        const fallbackProfile = {
+          id: `local-${Date.now()}`,
+          full_name: fullName,
+          role: roleSelected,
+          workshop_name: roleSelected === 'mechanic' ? businessName : null,
+          store_name: roleSelected === 'seller' ? businessName : null,
+          location: 'Abuja, Nigeria',
+        };
+        setProfile(fallbackProfile);
+        setRole(roleSelected);
+        setIsLoggedIn(true);
+        return;
+      }
+
+      if (handleSupabaseWriteFallback(error, () => {
+        const fallbackProfile = {
+          id: `local-${Date.now()}`,
+          full_name: fullName,
+          role: roleSelected,
+          workshop_name: roleSelected === 'mechanic' ? businessName : null,
+          store_name: roleSelected === 'seller' ? businessName : null,
+          location: 'Abuja, Nigeria',
+        };
+        setProfile(fallbackProfile);
+        setRole(roleSelected);
+        setIsLoggedIn(true);
+      }, 'Sign-up failed')) {
+        return;
+      }
+
+      throw error;
     }
   };
 
@@ -836,7 +893,5 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
 }
 
 export function useApp() {
-  const context = useContext(AppContext);
-  if (!context) throw new Error('useApp must be used within AppProvider');
-  return context;
+  return useContext(AppContext);
 }

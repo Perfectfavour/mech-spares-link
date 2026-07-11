@@ -1,23 +1,44 @@
-import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useMemo, useState } from 'react';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { ArrowLeft, Search, Filter, X, Star, ShoppingCart, MapPin } from 'lucide-react';
 import MobileContainer from '@/components/layout/MobileContainer';
+import BottomNav from '@/components/layout/BottomNav';
 import { Input } from '@/components/ui/input';
 import { Card } from '@/components/ui/card';
 import { useApp } from '@/context/AppContext';
 
 export default function SearchResults() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const { cart, products } = useApp();
-  const [query, setQuery] = useState('Brake Pads');
+  const [query, setQuery] = useState(searchParams.get('q') || '');
+  const [selectedCategory, setSelectedCategory] = useState(searchParams.get('category') || 'All');
+  const [condition, setCondition] = useState('Any');
+  const [sortOrder, setSortOrder] = useState('recommended');
 
-  const filteredResults = products.filter(part => 
-    part.name.toLowerCase().includes(query.toLowerCase()) ||
-    (part.category && part.category.toLowerCase().includes(query.toLowerCase()))
-  );
+  const categories = ['All', ...Array.from(new Set(products.map((part) => part.category).filter(Boolean)))];
+
+  const filteredResults = useMemo(() => {
+    const lowerQuery = query.toLowerCase();
+    const next = products.filter((part) => {
+      const matchesQuery = !lowerQuery ||
+        part.name.toLowerCase().includes(lowerQuery) ||
+        (part.category && part.category.toLowerCase().includes(lowerQuery)) ||
+        (part.description && part.description.toLowerCase().includes(lowerQuery));
+      const matchesCategory = selectedCategory === 'All' || part.category === selectedCategory;
+      const matchesCondition = condition === 'Any' || part.condition === condition;
+      return matchesQuery && matchesCategory && matchesCondition;
+    });
+
+    return next.sort((a, b) => {
+      if (sortOrder === 'price-asc') return (a.price || 0) - (b.price || 0);
+      if (sortOrder === 'price-desc') return (b.price || 0) - (a.price || 0);
+      return (b.rating || 0) - (a.rating || 0);
+    });
+  }, [condition, products, query, selectedCategory, sortOrder]);
 
   return (
-    <MobileContainer>
+    <MobileContainer hasBottomNav>
       {/* Search Header */}
       <div className="bg-card p-6 sticky top-0 z-10 border-b border-border space-y-4">
         <div className="flex items-center gap-4">
@@ -51,20 +72,27 @@ export default function SearchResults() {
         </div>
         
         <div className="flex gap-2 overflow-x-auto no-scrollbar pb-1">
-          <button className="bg-primary text-white px-4 py-2 rounded-xl text-sm font-bold flex items-center gap-2 whitespace-nowrap">
-            <Filter size={16} />
-            Filters
-          </button>
-          <button className="bg-muted text-foreground px-4 py-2 rounded-xl text-sm font-bold whitespace-nowrap border border-border">
-            Condition: New
-          </button>
-          <button className="bg-muted text-foreground px-4 py-2 rounded-xl text-sm font-bold whitespace-nowrap border border-border">
-            Price: Low to High
-          </button>
+          <div className="flex items-center gap-2">
+            {categories.map((category) => (
+              <button
+                key={category}
+                className={`px-4 py-2 rounded-xl text-sm font-bold whitespace-nowrap border ${selectedCategory === category ? 'bg-primary text-white border-primary' : 'bg-muted text-foreground border-border'}`}
+                onClick={() => setSelectedCategory(category)}
+              >
+                {category}
+              </button>
+            ))}
+          </div>
+        </div>
+        <div className="flex gap-2 overflow-x-auto no-scrollbar pb-1">
+          <button className={`px-4 py-2 rounded-xl text-sm font-bold whitespace-nowrap border ${condition === 'Any' ? 'bg-primary text-white border-primary' : 'bg-muted text-foreground border-border'}`} onClick={() => setCondition('Any')}>Condition: Any</button>
+          <button className={`px-4 py-2 rounded-xl text-sm font-bold whitespace-nowrap border ${condition === 'New' ? 'bg-primary text-white border-primary' : 'bg-muted text-foreground border-border'}`} onClick={() => setCondition('New')}>Condition: New</button>
+          <button className={`px-4 py-2 rounded-xl text-sm font-bold whitespace-nowrap border ${condition === 'Used' ? 'bg-primary text-white border-primary' : 'bg-muted text-foreground border-border'}`} onClick={() => setCondition('Used')}>Condition: Used</button>
+          <button className={`px-4 py-2 rounded-xl text-sm font-bold whitespace-nowrap border ${sortOrder === 'price-asc' ? 'bg-primary text-white border-primary' : 'bg-muted text-foreground border-border'}`} onClick={() => setSortOrder(sortOrder === 'price-asc' ? 'recommended' : 'price-asc')}>Price: Low to High</button>
         </div>
       </div>
 
-      <div className="p-6 space-y-4 flex-1">
+      <div className="p-6 space-y-4 flex-1 pb-24">
         <div className="flex justify-between items-center">
           <h3 className="font-bold text-muted-foreground text-sm uppercase tracking-wider">
             {filteredResults.length} Results Found
@@ -113,6 +141,7 @@ export default function SearchResults() {
           ))}
         </div>
       </div>
+      <BottomNav />
     </MobileContainer>
   );
 }

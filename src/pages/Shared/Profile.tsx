@@ -8,7 +8,7 @@ import { useApp } from '@/context/AppContext';
 
 export default function Profile() {
   const navigate = useNavigate();
-  const { role, setRole, signOutUser } = useApp();
+  const { role, setRole, signOutUser, profile } = useApp();
 
   const handleLogout = async () => {
     await signOutUser();
@@ -34,8 +34,8 @@ export default function Profile() {
             <User size={48} />
           </div>
           <div>
-            <h2 className="text-xl font-bold">John Doe</h2>
-            <p className="text-sm text-muted-foreground">john.doe@workshop.com</p>
+            <h2 className="text-xl font-bold">{profile?.full_name || 'John Doe'}</h2>
+            <p className="text-sm text-muted-foreground">{profile?.email || 'john.doe@workshop.com'}</p>
           </div>
           <span className="bg-primary/10 text-primary text-[10px] font-black px-4 py-1.5 rounded-full uppercase tracking-widest">
             {role === 'mechanic' ? 'Certified Mechanic' : 'Verified Seller'}

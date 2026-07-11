@@ -20,6 +20,12 @@ export default function ProductDetails() {
     navigate('/cart');
   };
 
+  const handleOpenChat = () => {
+    const recipientId = product.seller_id || 'seller-seed';
+    navigate(`/messages?recipientId=${recipientId}`);
+    toast.success(`Opening chat with ${product.seller || 'the seller'}`);
+  };
+
   const formattedPrice = typeof product.price === 'number' ? `₦${product.price.toLocaleString()}` : product.price;
 
   return (
@@ -63,7 +69,7 @@ export default function ProductDetails() {
               </p>
             </div>
           </div>
-          <button className="bg-primary/10 text-primary p-3 rounded-2xl">
+          <button className="bg-primary/10 text-primary p-3 rounded-2xl" onClick={handleOpenChat}>
             <MessageSquare size={20} />
           </button>
         </div>

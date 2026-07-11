@@ -1,8 +1,9 @@
 -- FixLink Database Schema Setup
 -- Run this in your Supabase SQL Editor
 
+CREATE EXTENSION IF NOT EXISTS pgcrypto;
+
 -- 1. PROFILES TABLE
--- Stores profile information for both mechanics and sellers.
 CREATE TABLE IF NOT EXISTS public.profiles (
     id UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
     full_name TEXT NOT NULL,
@@ -10,23 +11,20 @@ CREATE TABLE IF NOT EXISTS public.profiles (
     workshop_name TEXT,
     store_name TEXT,
     location TEXT,
+    city TEXT DEFAULT 'Abuja',
+    phone TEXT,
     bio TEXT,
     opening_time TEXT,
     closing_time TEXT,
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
+    is_verified BOOLEAN DEFAULT FALSE,
+    avatar_url TEXT,
+    created_at TIMESTAMPTZ DEFAULT timezone('utc'::text, now()) NOT NULL,
+    updated_at TIMESTAMPTZ DEFAULT timezone('utc'::text, now()) NOT NULL
 );
 
--- Enable RLS
 ALTER TABLE public.profiles ENABLE ROW LEVEL SECURITY;
 
--- Profiles Policies
-CREATE POLICY "Allow public read access to profiles" ON public.profiles FOR SELECT USING (true);
-CREATE POLICY "Allow users to update their own profile" ON public.profiles FOR UPDATE USING (auth.uid() = id);
-CREATE POLICY "Allow users to insert their own profile" ON public.profiles FOR INSERT WITH CHECK (auth.uid() = id);
-
-
 -- 2. PRODUCTS TABLE
--- Stores products / spare parts listed by sellers.
 CREATE TABLE IF NOT EXISTS public.products (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     seller_id UUID NOT NULL REFERENCES public.profiles(id) ON DELETE CASCADE,
@@ -36,72 +34,53 @@ CREATE TABLE IF NOT EXISTS public.products (
     stock INTEGER NOT NULL DEFAULT 0 CHECK (stock >= 0),
     image_url TEXT,
     description TEXT,
-    specs JSONB, -- Array of {key, value} specs
+    specs JSONB DEFAULT '{}'::jsonb,
+    brand TEXT,
+    condition TEXT DEFAULT 'New',
+    compatibility TEXT,
     rating NUMERIC NOT NULL DEFAULT 5.0 CHECK (rating BETWEEN 0 AND 5),
     reviews_count INTEGER NOT NULL DEFAULT 0,
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
+    is_active BOOLEAN DEFAULT TRUE,
+    created_at TIMESTAMPTZ DEFAULT timezone('utc'::text, now()) NOT NULL,
+    updated_at TIMESTAMPTZ DEFAULT timezone('utc'::text, now()) NOT NULL
 );
 
--- Enable RLS
 ALTER TABLE public.products ENABLE ROW LEVEL SECURITY;
 
--- Products Policies
-CREATE POLICY "Allow public read access to products" ON public.products FOR SELECT USING (true);
-CREATE POLICY "Allow sellers to manage their own products" ON public.products 
-    FOR ALL USING (auth.uid() = seller_id);
-
-
 -- 3. REQUESTS TABLE
--- Stores spare part requests sent out by mechanics.
 CREATE TABLE IF NOT EXISTS public.requests (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     mechanic_id UUID NOT NULL REFERENCES public.profiles(id) ON DELETE CASCADE,
-    vehicle TEXT NOT NULL, -- "Make Model Year"
+    vehicle TEXT NOT NULL,
     part TEXT NOT NULL,
     description TEXT,
     image_url TEXT,
+    category TEXT,
     status TEXT NOT NULL DEFAULT 'pending' CHECK (status IN ('pending', 'responded', 'completed')),
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
+    created_at TIMESTAMPTZ DEFAULT timezone('utc'::text, now()) NOT NULL,
+    updated_at TIMESTAMPTZ DEFAULT timezone('utc'::text, now()) NOT NULL
 );
 
--- Enable RLS
 ALTER TABLE public.requests ENABLE ROW LEVEL SECURITY;
 
--- Requests Policies
-CREATE POLICY "Allow public read access to requests" ON public.requests FOR SELECT USING (true);
-CREATE POLICY "Allow mechanics to manage their own requests" ON public.requests 
-    FOR ALL USING (auth.uid() = mechanic_id);
-CREATE POLICY "Allow sellers to insert/update requests status" ON public.requests
-    FOR UPDATE USING (true); -- Allows status update when offer is accepted
-
-
 -- 4. OFFERS TABLE
--- Stores offers/quotes sent by sellers in response to a part request.
 CREATE TABLE IF NOT EXISTS public.offers (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     request_id UUID NOT NULL REFERENCES public.requests(id) ON DELETE CASCADE,
     seller_id UUID NOT NULL REFERENCES public.profiles(id) ON DELETE CASCADE,
     price NUMERIC NOT NULL CHECK (price >= 0),
-    availability TEXT NOT NULL, -- e.g. "In Stock", "1 day"
-    delivery_estimate TEXT NOT NULL, -- e.g. "2 hours"
-    pickup_option BOOLEAN NOT NULL DEFAULT true,
+    availability TEXT NOT NULL,
+    delivery_estimate TEXT NOT NULL,
+    pickup_option BOOLEAN NOT NULL DEFAULT TRUE,
+    notes TEXT,
     status TEXT NOT NULL DEFAULT 'pending' CHECK (status IN ('pending', 'accepted', 'declined')),
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
+    created_at TIMESTAMPTZ DEFAULT timezone('utc'::text, now()) NOT NULL,
+    updated_at TIMESTAMPTZ DEFAULT timezone('utc'::text, now()) NOT NULL
 );
 
--- Enable RLS
 ALTER TABLE public.offers ENABLE ROW LEVEL SECURITY;
 
--- Offers Policies
-CREATE POLICY "Allow public read access to offers" ON public.offers FOR SELECT USING (true);
-CREATE POLICY "Allow sellers to manage their own offers" ON public.offers 
-    FOR ALL USING (auth.uid() = seller_id);
-CREATE POLICY "Allow mechanics to update offer status" ON public.offers
-    FOR UPDATE USING (true); -- Allow mechanic to accept/decline an offer
-
-
 -- 5. ORDERS TABLE
--- Stores buyer orders.
 CREATE TABLE IF NOT EXISTS public.orders (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     buyer_id UUID NOT NULL REFERENCES public.profiles(id) ON DELETE CASCADE,
@@ -110,62 +89,132 @@ CREATE TABLE IF NOT EXISTS public.orders (
     delivery_address TEXT NOT NULL,
     delivery_method TEXT NOT NULL,
     payment_method TEXT NOT NULL,
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
+    notes TEXT,
+    created_at TIMESTAMPTZ DEFAULT timezone('utc'::text, now()) NOT NULL,
+    updated_at TIMESTAMPTZ DEFAULT timezone('utc'::text, now()) NOT NULL
 );
 
--- Enable RLS
 ALTER TABLE public.orders ENABLE ROW LEVEL SECURITY;
 
--- Orders Policies
-CREATE POLICY "Allow users to view orders relevant to them" ON public.orders 
-    FOR SELECT USING (auth.uid() = buyer_id OR EXISTS (
-        SELECT 1 FROM public.order_items oi
-        JOIN public.products p ON oi.product_id = p.id
-        WHERE oi.order_id = orders.id AND p.seller_id = auth.uid()
-    ));
-CREATE POLICY "Allow buyers to place orders" ON public.orders 
-    FOR INSERT WITH CHECK (auth.uid() = buyer_id);
-CREATE POLICY "Allow order participants to update orders" ON public.orders
-    FOR UPDATE USING (auth.uid() = buyer_id OR EXISTS (
-        SELECT 1 FROM public.order_items oi
-        JOIN public.products p ON oi.product_id = p.id
-        WHERE oi.order_id = orders.id AND p.seller_id = auth.uid()
-    ));
-
-
 -- 6. ORDER_ITEMS TABLE
--- Stores individual items within an order.
 CREATE TABLE IF NOT EXISTS public.order_items (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     order_id UUID NOT NULL REFERENCES public.orders(id) ON DELETE CASCADE,
     product_id UUID NOT NULL REFERENCES public.products(id) ON DELETE CASCADE,
+    seller_id UUID REFERENCES public.profiles(id) ON DELETE SET NULL,
     quantity INTEGER NOT NULL CHECK (quantity > 0),
-    price NUMERIC NOT NULL CHECK (price >= 0)
+    price NUMERIC NOT NULL CHECK (price >= 0),
+    created_at TIMESTAMPTZ DEFAULT timezone('utc'::text, now()) NOT NULL
 );
 
--- Enable RLS
 ALTER TABLE public.order_items ENABLE ROW LEVEL SECURITY;
 
--- Order Items Policies
-CREATE POLICY "Allow read access to order items" ON public.order_items FOR SELECT USING (true);
-CREATE POLICY "Allow inserts to order items" ON public.order_items FOR INSERT WITH CHECK (true);
-
-
 -- 7. MESSAGES TABLE
--- Stores chat messages between users.
 CREATE TABLE IF NOT EXISTS public.messages (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     sender_id UUID NOT NULL REFERENCES public.profiles(id) ON DELETE CASCADE,
     receiver_id UUID NOT NULL REFERENCES public.profiles(id) ON DELETE CASCADE,
     content TEXT NOT NULL,
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
+    is_read BOOLEAN DEFAULT FALSE,
+    created_at TIMESTAMPTZ DEFAULT timezone('utc'::text, now()) NOT NULL,
+    updated_at TIMESTAMPTZ DEFAULT timezone('utc'::text, now()) NOT NULL
 );
 
--- Enable RLS
 ALTER TABLE public.messages ENABLE ROW LEVEL SECURITY;
 
--- Messages Policies
-CREATE POLICY "Allow users to read their own chats" ON public.messages 
-    FOR SELECT USING (auth.uid() = sender_id OR auth.uid() = receiver_id);
-CREATE POLICY "Allow users to send messages" ON public.messages 
-    FOR INSERT WITH CHECK (auth.uid() = sender_id);
+-- 8. REVIEWS TABLE
+CREATE TABLE IF NOT EXISTS public.reviews (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    product_id UUID NOT NULL REFERENCES public.products(id) ON DELETE CASCADE,
+    seller_id UUID NOT NULL REFERENCES public.profiles(id) ON DELETE CASCADE,
+    reviewer_id UUID NOT NULL REFERENCES public.profiles(id) ON DELETE CASCADE,
+    rating INTEGER NOT NULL CHECK (rating BETWEEN 1 AND 5),
+    comment TEXT,
+    created_at TIMESTAMPTZ DEFAULT timezone('utc'::text, now()) NOT NULL,
+    updated_at TIMESTAMPTZ DEFAULT timezone('utc'::text, now()) NOT NULL
+);
+
+ALTER TABLE public.reviews ENABLE ROW LEVEL SECURITY;
+
+-- Indexes for faster queries
+CREATE INDEX IF NOT EXISTS idx_products_seller_id ON public.products(seller_id);
+CREATE INDEX IF NOT EXISTS idx_products_category ON public.products(category);
+CREATE INDEX IF NOT EXISTS idx_requests_mechanic_id ON public.requests(mechanic_id);
+CREATE INDEX IF NOT EXISTS idx_requests_status ON public.requests(status);
+CREATE INDEX IF NOT EXISTS idx_offers_request_id ON public.offers(request_id);
+CREATE INDEX IF NOT EXISTS idx_orders_buyer_id ON public.orders(buyer_id);
+CREATE INDEX IF NOT EXISTS idx_order_items_order_id ON public.order_items(order_id);
+CREATE INDEX IF NOT EXISTS idx_messages_sender_receiver ON public.messages(sender_id, receiver_id);
+CREATE INDEX IF NOT EXISTS idx_reviews_product_id ON public.reviews(product_id);
+
+-- RLS POLICIES
+CREATE POLICY "Profiles are readable by everyone" ON public.profiles FOR SELECT USING (true);
+CREATE POLICY "Users can insert their own profile" ON public.profiles FOR INSERT WITH CHECK (auth.uid() = id);
+CREATE POLICY "Users can update their own profile" ON public.profiles FOR UPDATE USING (auth.uid() = id);
+
+CREATE POLICY "Products are readable by everyone" ON public.products FOR SELECT USING (true);
+CREATE POLICY "Sellers can manage their own products" ON public.products FOR ALL TO authenticated
+    USING (auth.uid() = seller_id)
+    WITH CHECK (auth.uid() = seller_id);
+
+CREATE POLICY "Mechanics can manage their own requests" ON public.requests FOR ALL TO authenticated
+    USING (auth.uid() = mechanic_id)
+    WITH CHECK (auth.uid() = mechanic_id);
+CREATE POLICY "Sellers can update request status" ON public.requests FOR UPDATE TO authenticated
+    USING (EXISTS (SELECT 1 FROM public.offers o WHERE o.request_id = requests.id AND o.seller_id = auth.uid()));
+
+CREATE POLICY "Sellers can manage their own offers" ON public.offers FOR ALL TO authenticated
+    USING (auth.uid() = seller_id)
+    WITH CHECK (auth.uid() = seller_id);
+CREATE POLICY "Mechanics can update offers on their requests" ON public.offers FOR UPDATE TO authenticated
+    USING (EXISTS (SELECT 1 FROM public.requests r WHERE r.id = offers.request_id AND r.mechanic_id = auth.uid()));
+
+CREATE POLICY "Users can view orders relevant to them" ON public.orders FOR SELECT TO authenticated
+    USING (
+        auth.uid() = buyer_id OR EXISTS (
+            SELECT 1
+            FROM public.order_items oi
+            JOIN public.products p ON oi.product_id = p.id
+            WHERE oi.order_id = orders.id AND p.seller_id = auth.uid()
+        )
+    );
+CREATE POLICY "Buyers can place orders" ON public.orders FOR INSERT TO authenticated
+    WITH CHECK (auth.uid() = buyer_id);
+CREATE POLICY "Order participants can update orders" ON public.orders FOR UPDATE TO authenticated
+    USING (
+        auth.uid() = buyer_id OR EXISTS (
+            SELECT 1
+            FROM public.order_items oi
+            JOIN public.products p ON oi.product_id = p.id
+            WHERE oi.order_id = orders.id AND p.seller_id = auth.uid()
+        )
+    );
+
+CREATE POLICY "Users can view order items relevant to them" ON public.order_items FOR SELECT TO authenticated
+    USING (
+        EXISTS (
+            SELECT 1 FROM public.orders o
+            WHERE o.id = order_items.order_id AND o.buyer_id = auth.uid()
+        ) OR EXISTS (
+            SELECT 1 FROM public.products p
+            WHERE p.id = order_items.product_id AND p.seller_id = auth.uid()
+        )
+    );
+CREATE POLICY "Buyers can insert order items" ON public.order_items FOR INSERT TO authenticated
+    WITH CHECK (
+        EXISTS (
+            SELECT 1 FROM public.orders o
+            WHERE o.id = order_items.order_id AND o.buyer_id = auth.uid()
+        )
+    );
+
+CREATE POLICY "Users can read their own chats" ON public.messages FOR SELECT TO authenticated
+    USING (auth.uid() = sender_id OR auth.uid() = receiver_id);
+CREATE POLICY "Users can send messages" ON public.messages FOR INSERT TO authenticated
+    WITH CHECK (auth.uid() = sender_id);
+
+CREATE POLICY "Reviews are readable by everyone" ON public.reviews FOR SELECT USING (true);
+CREATE POLICY "Authenticated users can create reviews" ON public.reviews FOR INSERT TO authenticated
+    WITH CHECK (auth.uid() = reviewer_id);
+CREATE POLICY "Reviewers can update their reviews" ON public.reviews FOR UPDATE TO authenticated
+    USING (auth.uid() = reviewer_id);
