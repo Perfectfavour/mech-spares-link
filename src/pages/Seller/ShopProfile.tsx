@@ -76,11 +76,11 @@ export default function ShopProfile() {
         <form onSubmit={handleSave} className="space-y-6">
           <div className="space-y-2">
             <Label htmlFor="shopName">Shop Name</Label>
-            <Input 
-              id="shopName" 
-              value={storeName} 
-              onChange={(e) => setStoreName(e.target.value)} 
-              className="h-14 rounded-xl px-4" 
+            <Input
+              id="shopName"
+              value={storeName}
+              onChange={(e) => setStoreName(e.target.value)}
+              className="h-14 rounded-xl px-4"
               required
             />
           </div>
@@ -89,11 +89,11 @@ export default function ShopProfile() {
             <Label htmlFor="location">Location</Label>
             <div className="relative">
               <MapPin className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground" size={18} />
-              <Input 
-                id="location" 
-                value={location} 
-                onChange={(e) => setLocation(e.target.value)} 
-                className="h-14 rounded-xl pl-12" 
+              <Input
+                id="location"
+                value={location}
+                onChange={(e) => setLocation(e.target.value)}
+                className="h-14 rounded-xl pl-12"
                 required
               />
             </div>
@@ -101,10 +101,10 @@ export default function ShopProfile() {
 
           <div className="space-y-2">
             <Label htmlFor="bio">About the Shop</Label>
-            <Textarea 
-              id="bio" 
-              value={bio} 
-              onChange={(e) => setBio(e.target.value)} 
+            <Textarea
+              id="bio"
+              value={bio}
+              onChange={(e) => setBio(e.target.value)}
               className="min-h-[120px] rounded-2xl p-4"
             />
           </div>
@@ -114,10 +114,10 @@ export default function ShopProfile() {
               <Label>Opening Time</Label>
               <div className="relative">
                 <Clock className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground" size={18} />
-                <Input 
-                  value={openingTime} 
-                  onChange={(e) => setOpeningTime(e.target.value)} 
-                  className="h-14 rounded-xl pl-12" 
+                <Input
+                  value={openingTime}
+                  onChange={(e) => setOpeningTime(e.target.value)}
+                  className="h-14 rounded-xl pl-12"
                 />
               </div>
             </div>
@@ -125,10 +125,10 @@ export default function ShopProfile() {
               <Label>Closing Time</Label>
               <div className="relative">
                 <Clock className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground" size={18} />
-                <Input 
-                  value={closingTime} 
-                  onChange={(e) => setClosingTime(e.target.value)} 
-                  className="h-14 rounded-xl pl-12" 
+                <Input
+                  value={closingTime}
+                  onChange={(e) => setClosingTime(e.target.value)}
+                  className="h-14 rounded-xl pl-12"
                 />
               </div>
             </div>

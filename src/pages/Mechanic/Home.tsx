@@ -12,9 +12,10 @@ const categories = [
   { id: 1, name: 'Engine', icon: '⚙️' },
   { id: 2, name: 'Brakes', icon: '🛑' },
   { id: 3, name: 'Suspension', icon: '🛠️' },
-  { id: 4, name: 'Electrical', icon: '⚡' },
-  { id: 5, name: 'Body', icon: '🚗' },
-  { id: 6, name: 'Filters', icon: '🧪' },
+  { id: 4, name: 'Transmission', icon: '🛠️' },
+  { id: 5, name: 'Electrical', icon: '⚡' },
+  { id: 6, name: 'Body', icon: '🚗' },
+  { id: 7, name: 'Filters', icon: '🧪' },
 ];
 
 export default function MechanicHome() {

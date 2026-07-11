@@ -71,8 +71,8 @@ export default function SearchResults() {
           </button>
         </div>
         
-        <div className="flex gap-2 overflow-x-auto no-scrollbar pb-1">
-          <div className="flex items-center gap-2">
+        <div className="w-full pb-1">
+          <div className="grid grid-cols-4 gap-2">
             {categories.map((category) => (
               <button
                 key={category}

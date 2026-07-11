@@ -29,13 +29,15 @@ interface AppState {
   sendMessage: (receiverId: string, content: string) => Promise<void>;
   isSupabaseActive: boolean;
   signUpUser: (email: string, pass: string, fullName: string, role: Role, businessName: string) => Promise<void>;
-  signInUser: (email: string, pass: string, selectedRole?: Role) => Promise<void>;
+  signInUser: (email: string, pass: string, selectedRole?: Role) => Promise<boolean>;
   signOutUser: () => Promise<void>;
   products: any[];
   fetchProducts: () => Promise<void>;
   addProduct: (product: any) => Promise<void>;
   updateProduct: (productId: string, updates: any) => Promise<void>;
   deleteProduct: (productId: string) => Promise<void>;
+  authError: string | null;
+  resendConfirmation: (email: string) => Promise<void>;
 }
 
 const fallbackAppState: AppState = {
@@ -63,13 +65,15 @@ const fallbackAppState: AppState = {
   sendMessage: async () => undefined,
   isSupabaseActive: false,
   signUpUser: async () => undefined,
-  signInUser: async () => undefined,
+  signInUser: async () => false,
   signOutUser: async () => undefined,
   products: seededProducts,
   fetchProducts: async () => undefined,
   addProduct: async () => undefined,
   updateProduct: async () => undefined,
   deleteProduct: async () => undefined,
+  authError: null,
+  resendConfirmation: async () => undefined,
 };
 
 const AppContext = createContext<AppState>(fallbackAppState);
@@ -87,6 +91,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [user, setUser] = useState<any | null>(null);
   const [profile, setProfileState] = useState<any | null>(null);
+  const [authError, setAuthError] = useState<string | null>(null);
 
   // Lists
   const [cart, setCart] = useState<any[]>([]);
@@ -968,9 +973,9 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
-  const signInUser = async (email: string, pass: string, selectedRole?: Role) => {
+  const signInUser = async (email: string, pass: string, selectedRole?: Role): Promise<boolean> => {
     if (!isSupabaseActive) {
-      // Mock Login
+      // Mock Login - always successful in mock mode
       const mockSession = localStorage.getItem(STORAGE_PREFIX + 'mock_session');
       if (mockSession) {
         const parsed = JSON.parse(mockSession);
@@ -979,7 +984,8 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
           setProfile(parsed.profile);
           setRole(parsed.profile.role || selectedRole || role);
           setIsLoggedIn(true);
-          return;
+          setAuthError(null);
+          return true;
         }
       }
       // General default profile if user not signed up
@@ -996,12 +1002,28 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       setProfile(mockProfile);
       setRole(mockProfile.role);
       setIsLoggedIn(true);
-      return;
+      setAuthError(null);
+      return true;
     }
 
+    try {
     const { data, error } = await supabase.auth.signInWithPassword({ email, password: pass });
-    if (error) throw error;
+
+      if (error) {
+        if (error.message.includes('Email not confirmed')) {
+          setAuthError('Email not confirmed. Please check your inbox.');
+          return false;
+        }
+        setAuthError(error.message);
+        return false;
+      }
     if (data.user) {
+        // Check if email is confirmed
+        if (!data.user.email_confirmed_at) {
+          setAuthError('Email not confirmed. Please check your inbox.');
+          return false;
+        }
+
       const { data: profileData, error: profileError } = await supabase
         .from('profiles')
         .select('*')
@@ -1023,6 +1045,38 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       }
       setUser(data.user);
       setIsLoggedIn(true);
+        setAuthError(null);
+        return true;
+    }
+
+      setAuthError('Login failed. Please try again.');
+      return false;
+    } catch (error: any) {
+      setAuthError(error.message || 'Failed to sign in. Please check your credentials.');
+      return false;
+    }
+  };
+
+  const resendConfirmation = async (email: string) => {
+    if (!isSupabaseActive) {
+      setAuthError('Confirmation email resent (mock)');
+      return;
+    }
+
+    try {
+      const { error } = await supabase.auth.resend({
+        type: 'signup',
+        email,
+        options: {
+          emailRedirectTo: window.location.origin,
+        },
+      });
+
+      if (error) throw error;
+      setAuthError('Confirmation email sent! Please check your inbox.');
+    } catch (error: any) {
+      setAuthError('Failed to resend confirmation email');
+      throw error;
     }
   };
 
@@ -1070,6 +1124,8 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         updateProduct,
         deleteProduct,
         updateProfile,
+        authError,
+        resendConfirmation,
       }}
     >
       {children}
@@ -1080,3 +1136,4 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
 export function useApp() {
   return useContext(AppContext);
 }
+
