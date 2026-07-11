@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, BellRing, ChevronRight, Trash2, Check } from 'lucide-react';
 import MobileContainer from '@/components/layout/MobileContainer';
@@ -11,19 +11,21 @@ import { toast } from 'sonner';
 
 export default function Notifications() {
   const navigate = useNavigate();
-  const { user, messages, orders, requests, offers } = useApp();
+  const { user, messages, orders, requests, offers, updateProfile } = useApp();
   const [query, setQuery] = useState('');
+  const [notifications, setNotifications] = useState<any[]>([]);
+  const [deletedIds, setDeletedIds] = useState<Set<string>>(new Set());
 
   // Generate notifications based on user activity and role
   const generateNotifications = () => {
-    const notifications = [];
+    const newNotifications = [];
 
+    if (!user) return newNotifications;
     // Order-related notifications
-    if (user) {
-      // Buyer notifications
       const buyerOrders = orders.filter(o => o.buyer_id === user.id);
       buyerOrders.forEach(order => {
-        notifications.push({
+      if (deletedIds.has(`order-${order.id}`)) return;
+      newNotifications.push({
           id: `order-${order.id}`,
           title: `Order #${order.id} Update`,
           message: `Your order for ${order.items.length} items is now ${order.status}`,
@@ -34,10 +36,10 @@ export default function Notifications() {
         });
       });
 
-      // Seller notifications
       const sellerOrders = orders.filter(o => o.items.some((item: any) => item.seller_id === user.id));
       sellerOrders.forEach(order => {
-        notifications.push({
+      if (deletedIds.has(`seller-order-${order.id}`)) return;
+      newNotifications.push({
           id: `seller-order-${order.id}`,
           title: `New Order #${order.id}`,
           message: `You have a new order for ${order.items.filter((i: any) => i.seller_id === user.id).length} items`,
@@ -52,7 +54,8 @@ export default function Notifications() {
       if (user.role === 'mechanic') {
         const mechanicRequests = requests.filter(r => r.mechanic_id === user.id);
         mechanicRequests.forEach(request => {
-          notifications.push({
+        if (deletedIds.has(`request-${request.id}`)) return;
+        newNotifications.push({
             id: `request-${request.id}`,
             title: `Request Update: ${request.part}`,
             message: `Your request for ${request.part} has ${request.responses.length} offers`,
@@ -68,7 +71,8 @@ export default function Notifications() {
       if (user.role === 'seller') {
         const sellerOffers = offers.filter(o => o.seller_id === user.id);
         sellerOffers.forEach(offer => {
-          notifications.push({
+        if (deletedIds.has(`offer-${offer.id}`)) return;
+        newNotifications.push({
             id: `offer-${offer.id}`,
             title: `Offer Update: ${offer.part}`,
             message: `Your offer for ${offer.part} was ${offer.status}`,
@@ -82,38 +86,61 @@ export default function Notifications() {
 
       // Message notifications
       messages.forEach(message => {
-        if (message.receiver_id === user.id && !message.read) {
-          notifications.push({
+      if (message.receiver_id === user.id && !deletedIds.has(`message-${message.id}`)) {
+        newNotifications.push({
             id: `message-${message.id}`,
             title: `New Message from ${message.sender?.full_name || 'User'}`,
             message: message.content.substring(0, 50) + (message.content.length > 50 ? '...' : ''),
             time: message.created_at.split('T')[0],
             type: 'message',
             referenceId: message.id,
-            read: false
+          read: message.read || false
           });
         }
       });
-    }
 
-    return notifications.sort((a, b) => new Date(b.time).getTime() - new Date(a.time).getTime());
+    return newNotifications.sort((a, b) =>
+      new Date(b.time).getTime() - new Date(a.time).getTime()
+    );
   };
 
-  const notifications = useMemo(() => {
-    const allNotifications = generateNotifications();
-    return allNotifications.filter((item) =>
-      item.title.toLowerCase().includes(query.toLowerCase()) ||
-      item.message.toLowerCase().includes(query.toLowerCase())
-    );
-  }, [query, user, messages, orders, requests, offers]);
+  // Initialize notifications on mount
+  useEffect(() => {
+    setNotifications(generateNotifications());
+  }, [user, messages, orders, requests, offers]);
+
+  const filteredNotifications = notifications.filter((item) =>
+    item.title.toLowerCase().includes(query.toLowerCase()) ||
+    item.message.toLowerCase().includes(query.toLowerCase())
+  );
 
   const handleDelete = (id: string) => {
-    // In a real app, you would update the database
-    // For now, we'll just show a toast
+    // Add to deleted set
+    setDeletedIds(prev => new Set(prev).add(id));
+    // Remove from UI
+    setNotifications(prev => prev.filter(n => n.id !== id));
     toast.success('Notification dismissed');
   };
 
+  const handleMarkAllAsRead = async () => {
+    try {
+      // Update profile to mark notifications as read
+      await updateProfile({ last_read_notifications: new Date().toISOString() });
+
+      // Update local state
+      setNotifications(prev => prev.map(n => ({ ...n, read: true })));
+      toast.success('All notifications marked as read');
+    } catch (error) {
+      toast.error('Failed to update notification status');
+}
+  };
+
   const handleNotificationClick = (notification: any) => {
+    // Mark as read when clicked
+    setNotifications(prev => prev.map(n =>
+      n.id === notification.id ? { ...n, read: true } : n
+    ));
+
     switch (notification.type) {
       case 'order':
         navigate(`/order/${notification.referenceId}`);
@@ -145,23 +172,36 @@ export default function Notifications() {
           </div>
         </div>
 
-        <div className="relative">
-          <Input
-            placeholder="Search notifications..."
-            className="h-14 rounded-2xl pl-4 bg-card border-none shadow-sm"
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-          />
+        <div className="flex items-center gap-3">
+          <div className="flex-1 relative">
+            <Input
+              placeholder="Search notifications..."
+              className="h-14 rounded-2xl pl-4 bg-card border-none shadow-sm"
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+            />
+          </div>
+          {notifications.length > 0 && (
+            <Button
+              variant="outline"
+              size="sm"
+              className="rounded-xl h-12 px-3 text-sm"
+              onClick={handleMarkAllAsRead}
+            >
+              <Check size={14} className="mr-1" />
+              Mark all
+            </Button>
+          )}
         </div>
 
         <div className="space-y-3 pb-20">
-          {notifications.length === 0 ? (
+          {filteredNotifications.length === 0 ? (
             <div className="text-center py-8 text-muted-foreground">
               <p>No notifications found</p>
               {query && <p className="text-sm mt-2">Try adjusting your search</p>}
             </div>
           ) : (
-            notifications.map((item) => (
+            filteredNotifications.map((item) => (
               <Card
                 key={item.id}
                 className={`p-4 rounded-[28px] border border-border flex items-start gap-3 cursor-pointer ${
@@ -196,21 +236,6 @@ export default function Notifications() {
             ))
           )}
         </div>
-
-        {notifications.length > 0 && (
-          <div className="fixed top-20 ml-55 p-6">
-            <Button
-              variant="outline"
-              className=" rounded-xl h-12"
-              onClick={() => {
-                // Mark all as read functionality
-                toast.success('All notifications marked as read');
-              }}
-            >
-              Mark All as Read
-            </Button>
-          </div>
-        )}
       </div>
       <BottomNav />
     </MobileContainer>
