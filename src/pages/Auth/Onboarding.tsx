@@ -35,7 +35,7 @@ export default function Onboarding() {
   };
 
   return (
-    <div className="min-h-screen bg-background flex flex-col p-6 max-w-md mx-auto">
+    <div className="h-[100dvh] overflow-hidden bg-background flex flex-col justify-between p-8 max-w-md mx-auto">
       <div className="flex-1 flex flex-col items-center justify-center">
         <AnimatePresence mode="wait">
           <motion.div
@@ -43,14 +43,31 @@ export default function Onboarding() {
             initial={{ x: 20, opacity: 0 }}
             animate={{ x: 0, opacity: 1 }}
             exit={{ x: -20, opacity: 0 }}
-            className="flex flex-col items-center text-center gap-8"
+            className="flex flex-col items-center text-center space-y-6"
           >
-            <div className="w-full aspect-square rounded-3xl overflow-hidden shadow-2xl">
-              <img src={slides[current].image} alt="Onboarding" className="w-full h-full object-cover" />
+            {/* Circular Image Illustration Wrapper */}
+            <div className="w-56 h-56 rounded-full overflow-hidden bg-muted/30 border-4 border-card shadow-xl flex items-center justify-center shrink-0">
+              <img src={slides[current].image} alt="Onboarding" className="w-full h-full object-cover scale-105" />
             </div>
-            <div className="space-y-4">
-              <h2 className="text-3xl font-bold">{slides[current].title}</h2>
-              <p className="text-muted-foreground text-lg leading-relaxed">
+
+            {/* Pagination dots placed between illustration and title */}
+            <div className="flex justify-center items-center gap-1.5 py-2">
+              {slides.map((_, i) => (
+                <div
+                  key={i}
+                  className={`transition-all duration-300 rounded-full ${
+                    i === current 
+                      ? 'w-5 h-2 bg-primary' 
+                      : 'w-2 h-2 border border-primary/45 bg-transparent'
+                  }`}
+                />
+              ))}
+            </div>
+
+            {/* Text Contents */}
+            <div className="space-y-4 px-2">
+              <h2 className="text-2xl font-black text-foreground tracking-tight leading-tight px-2">{slides[current].title}</h2>
+              <p className="text-muted-foreground text-sm leading-relaxed px-4 max-w-sm">
                 {slides[current].description}
               </p>
             </div>
@@ -58,21 +75,33 @@ export default function Onboarding() {
         </AnimatePresence>
       </div>
 
-      <div className="flex flex-col gap-6 py-8">
-        <div className="flex justify-center gap-2">
-          {slides.map((_, i) => (
-            <div
-              key={i}
-              className={`h-2 rounded-full transition-all duration-300 ${
-                i === current ? 'w-8 bg-primary' : 'w-2 bg-primary/20'
-              }`}
-            />
-          ))}
-        </div>
-        <Button size="xl" onClick={next} className="w-full flex justify-between items-center px-8">
-          <span>{current === slides.length - 1 ? 'Get Started' : 'Next'}</span>
-          <ChevronRight size={20} />
-        </Button>
+      {/* Bottom Actions Bar */}
+      <div className="w-full pt-4 pb-1">
+        {current < slides.length - 1 ? (
+          <div className="flex items-center justify-between w-full px-2">
+            <button 
+              onClick={() => navigate('/login')} 
+              className="text-[10px] font-bold text-muted-foreground/60 hover:text-foreground active:scale-95 transition-all bg-transparent border-none py-1 cursor-pointer tracking-wider"
+            >
+              SKIP
+            </button>
+            <Button 
+              onClick={next} 
+              className="rounded-full font-bold px-5 h-8 text-[10px] tracking-wider shadow-sm cursor-pointer"
+            >
+              NEXT
+            </Button>
+          </div>
+        ) : (
+          <div className="flex items-center justify-center w-full px-2">
+            <Button 
+              onClick={next} 
+              className="rounded-full font-bold px-10 h-8 text-[10px] tracking-wider shadow-sm cursor-pointer"
+            >
+              GET STARTED
+            </Button>
+          </div>
+        )}
       </div>
     </div>
   );

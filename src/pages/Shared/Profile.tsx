@@ -97,26 +97,6 @@ export default function Profile() {
           </span>
         </div>
 
-        {/* Role Toggle for MVP/Demo */}
-        <Card className="p-5 rounded-[32px] border-2 border-primary/20 bg-primary/5 space-y-4">
-          <div className="flex items-center gap-3">
-            {role === 'mechanic' ? <Store className="text-primary" /> : <Wrench className="text-primary" />}
-            <div className="flex-1">
-              <h4 className="font-bold text-sm">Switch to {role === 'mechanic' ? 'Seller' : 'Mechanic'} View</h4>
-              <p className="text-[10px] text-muted-foreground">Demo feature: Switch roles to test both experiences.</p>
-            </div>
-          </div>
-          <Button 
-            className="w-full rounded-2xl font-bold animate-pulse" 
-            variant="outline"
-            onClick={() => {
-              setRole(role === 'mechanic' ? 'seller' : 'mechanic');
-              navigate('/');
-            }}
-          >
-            Switch View
-          </Button>
-        </Card>
 
         {/* Menu Items */}
         <div className="space-y-3">
@@ -158,7 +138,7 @@ export default function Profile() {
 
       {/* Edit Mechanic Profile Dialog */}
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-        <DialogContent className="max-w-md rounded-[32px] border border-border p-6 shadow-2xl bg-card">
+        <DialogContent className="max-w-md max-h-[85vh] overflow-y-auto no-scrollbar rounded-[32px] border border-border p-6 shadow-2xl bg-card">
           <DialogHeader className="border-b border-border pb-3">
             <DialogTitle className="text-xl font-bold">Edit Mechanic Profile</DialogTitle>
           </DialogHeader>

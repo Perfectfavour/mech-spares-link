@@ -33,13 +33,18 @@ export default function SignUp() {
   };
 
   return (
-    <div className="min-h-screen bg-background flex flex-col p-6 max-w-md mx-auto overflow-y-auto">
-      <div className="py-8 flex flex-col items-center gap-3">
-        <h1 className="text-3xl font-bold">Join FixLink</h1>
-        <p className="text-muted-foreground text-center">Join the network of professional mechanics and sellers in Abuja.</p>
+    <div className="h-[100dvh] overflow-y-auto bg-background flex flex-col justify-between p-6 max-w-md mx-auto no-scrollbar">
+      <div className="pt-6 pb-2 flex flex-col items-center gap-3">
+        <div className="bg-primary p-3 rounded-2xl text-white">
+          <Store size={28} />
+        </div>
+        <h1 className="text-2xl font-bold">Join FixLink</h1>
+        <p className="text-muted-foreground text-sm text-center">
+          Join the network of professional mechanics and sellers in Abuja.
+        </p>
       </div>
 
-      <div className="flex p-1 bg-muted rounded-2xl mb-8">
+      <div className="flex p-1 bg-muted rounded-2xl mb-4">
         <button
           onClick={() => setRoleLocal('mechanic')}
           className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-xl transition-all ${
@@ -47,7 +52,7 @@ export default function SignUp() {
           }`}
         >
           <Wrench size={18} />
-          <span className="font-semibold">Mechanic</span>
+          <span className="font-semibold text-sm">Mechanic</span>
         </button>
         <button
           onClick={() => setRoleLocal('seller')}
@@ -56,19 +61,19 @@ export default function SignUp() {
           }`}
         >
           <Store size={18} />
-          <span className="font-semibold">Seller</span>
+          <span className="font-semibold text-sm">Seller</span>
         </button>
       </div>
 
-      <form onSubmit={handleSignUp} className="space-y-4">
-        <div className="space-y-2">
+      <form onSubmit={handleSignUp} className="space-y-3 flex-1 flex flex-col justify-center py-2">
+        <div className="space-y-1">
           <Label htmlFor="fullname">Full Name</Label>
           <div className="relative">
             <User className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground" size={18} />
             <Input 
               id="fullname" 
               placeholder="John Doe" 
-              className="h-14 rounded-xl pl-12" 
+              className="h-12 rounded-xl pl-12" 
               value={fullName}
               onChange={(e) => setFullName(e.target.value)}
               required 
@@ -76,7 +81,7 @@ export default function SignUp() {
           </div>
         </div>
 
-        <div className="space-y-2">
+        <div className="space-y-1">
           <Label htmlFor="email">Email Address</Label>
           <div className="relative">
             <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground" size={18} />
@@ -84,7 +89,7 @@ export default function SignUp() {
               id="email" 
               type="email" 
               placeholder="john@example.com" 
-              className="h-14 rounded-xl pl-12" 
+              className="h-12 rounded-xl pl-12" 
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               required 
@@ -92,7 +97,7 @@ export default function SignUp() {
           </div>
         </div>
 
-        <div className="space-y-2">
+        <div className="space-y-1">
           <Label htmlFor="workshop">
             {role === 'mechanic' ? 'Workshop Name' : 'Store Name'}
           </Label>
@@ -105,7 +110,7 @@ export default function SignUp() {
             <Input 
               id="workshop" 
               placeholder={role === 'mechanic' ? "Precision Motors" : "Abuja Parts Hub"} 
-              className="h-14 rounded-xl pl-12" 
+              className="h-12 rounded-xl pl-12" 
               value={businessName}
               onChange={(e) => setBusinessName(e.target.value)}
               required 
@@ -113,7 +118,7 @@ export default function SignUp() {
           </div>
         </div>
 
-        <div className="space-y-2">
+        <div className="space-y-1">
           <Label htmlFor="password">Password</Label>
           <div className="relative">
             <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground" size={18} />
@@ -121,7 +126,7 @@ export default function SignUp() {
               id="password" 
               type="password" 
               placeholder="••••••••" 
-              className="h-14 rounded-xl pl-12" 
+              className="h-12 rounded-xl pl-12" 
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               required 
@@ -129,13 +134,13 @@ export default function SignUp() {
           </div>
         </div>
 
-        <Button type="submit" size="xl" className="w-full mt-4" disabled={loading}>
+        <Button type="submit" size="lg" className="w-full mt-4 h-12 rounded-xl font-bold" disabled={loading}>
           {loading ? 'Creating Account...' : 'Create Account'}
         </Button>
       </form>
 
-      <div className="py-8 text-center mt-auto">
-        <p className="text-muted-foreground">
+      <div className="py-4 text-center mt-auto">
+        <p className="text-muted-foreground text-sm">
           Already have an account? <Link to="/login" className="text-primary font-bold">Sign In</Link>
         </p>
       </div>

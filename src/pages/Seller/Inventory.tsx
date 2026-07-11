@@ -42,6 +42,46 @@ export default function Inventory() {
   const [price, setPrice] = useState('');
   const [stock, setStock] = useState('');
   const [description, setDescription] = useState('');
+  const [image, setImage] = useState('');
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        const img = new window.Image();
+        img.onload = () => {
+          const canvas = document.createElement('canvas');
+          const MAX_WIDTH = 500;
+          const MAX_HEIGHT = 500;
+          let width = img.width;
+          let height = img.height;
+
+          if (width > height) {
+            if (width > MAX_WIDTH) {
+              height *= MAX_WIDTH / width;
+              width = MAX_WIDTH;
+            }
+          } else {
+            if (height > MAX_HEIGHT) {
+              width *= MAX_HEIGHT / height;
+              height = MAX_HEIGHT;
+            }
+          }
+
+          canvas.width = width;
+          canvas.height = height;
+          const ctx = canvas.getContext('2d');
+          ctx?.drawImage(img, 0, 0, width, height);
+
+          const dataUrl = canvas.toDataURL('image/jpeg', 0.7);
+          setImage(dataUrl);
+        };
+        img.src = reader.result as string;
+      };
+      reader.readAsDataURL(file);
+    }
+  };
 
   // Filter products by current seller
   const sellerProducts = products.filter((p) => p.seller_id === user?.id);
@@ -61,6 +101,7 @@ export default function Inventory() {
     setPrice('');
     setStock('');
     setDescription('');
+    setImage('');
     setIsDialogOpen(true);
   };
 
@@ -71,6 +112,7 @@ export default function Inventory() {
     setPrice(String(product.price));
     setStock(String(product.stock));
     setDescription(product.description || '');
+    setImage(product.image || product.image_url || '');
     setIsDialogOpen(true);
   };
 
@@ -87,6 +129,7 @@ export default function Inventory() {
       price: Number(price),
       stock: Number(stock),
       description,
+      image: image || 'https://images.unsplash.com/photo-1486006920555-c77dce18193b?auto=format&fit=crop&w=400&q=80',
     };
 
     try {
@@ -219,7 +262,7 @@ export default function Inventory() {
 
       {/* Add / Edit Dialog */}
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-        <DialogContent className="max-w-md rounded-[32px] border border-border p-6 shadow-2xl bg-card">
+        <DialogContent className="max-w-md max-h-[85vh] overflow-y-auto no-scrollbar rounded-[32px] border border-border p-6 shadow-2xl bg-card">
           <DialogHeader className="border-b border-border pb-3">
             <DialogTitle className="text-xl font-bold">
               {editingProduct ? 'Edit Inventory Item' : 'Add New Inventory Item'}
@@ -278,6 +321,50 @@ export default function Inventory() {
                   <option key={cat} value={cat}>{cat}</option>
                 ))}
               </select>
+            </div>
+
+            <div className="space-y-2">
+              <Label>Product Image</Label>
+              <div className="flex gap-2">
+                <Button 
+                  type="button" 
+                  variant="outline" 
+                  className="relative flex-1 h-12 rounded-xl cursor-pointer text-xs"
+                >
+                  <span>Device / Camera</span>
+                  <input 
+                    type="file" 
+                    accept="image/*" 
+                    onChange={handleFileChange}
+                    className="absolute inset-0 opacity-0 cursor-pointer w-full h-full"
+                  />
+                </Button>
+                <div className="flex-[2]">
+                  <Input 
+                    value={image.startsWith('data:') ? 'Custom Photo Uploaded' : image} 
+                    onChange={(e) => setImage(e.target.value)} 
+                    placeholder="Or enter Image URL"
+                    className="h-12 rounded-xl"
+                  />
+                </div>
+              </div>
+              {image && (
+                <div className="flex items-center gap-3 mt-1 bg-muted/20 p-2 rounded-2xl border border-border/30">
+                  <div className="w-12 h-12 rounded-xl overflow-hidden border border-border bg-card shrink-0">
+                    <img src={image} alt="Preview" className="w-full h-full object-cover" />
+                  </div>
+                  <span className="text-[10px] text-muted-foreground font-medium truncate flex-1">
+                    {image.startsWith('data:') ? 'Image uploaded from device/camera' : image}
+                  </span>
+                  <button 
+                    type="button" 
+                    onClick={() => setImage('')}
+                    className="text-xs font-bold text-destructive px-2 py-1 hover:bg-destructive/10 rounded-lg active:scale-95 transition-all"
+                  >
+                    Remove
+                  </button>
+                </div>
+              )}
             </div>
 
             <div className="space-y-1">

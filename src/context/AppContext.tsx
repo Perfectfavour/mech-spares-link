@@ -329,6 +329,13 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     return (
       !error ||
       error?.status === 429 ||
+      error?.status === 401 ||
+      error?.code === 'PGRST301' ||
+      message.includes('jwt') ||
+      message.includes('unauthorized') ||
+      message.includes('invalid api key') ||
+      message.includes('token') ||
+      message.includes('invalid signature') ||
       message.includes('rate limit') ||
       message.includes('failed to fetch') ||
       message.includes('network') ||
@@ -356,14 +363,15 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       const { data } = await supabase
         .from('products')
         .select('*, profiles(store_name, full_name, location)');
-      if (data && data.length > 0) {
+      if (data) {
         const mapped = data.map((p: any) => ({
           ...p,
           seller: p.profiles?.store_name || p.profiles?.full_name || 'Abuja Supplier',
           location: p.profiles?.location || 'Gudu Market',
         }));
-        setProducts(mapped);
-        localStorage.setItem(STORAGE_PREFIX + 'products', JSON.stringify(mapped));
+        const finalProducts = mapped.length > 0 ? mapped : defaultProducts;
+        setProducts(finalProducts);
+        localStorage.setItem(STORAGE_PREFIX + 'products', JSON.stringify(finalProducts));
       }
     } catch (e) {
       console.error(e);
@@ -374,6 +382,8 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     const newProduct = {
       ...prod,
       id: prod.id || `p-${Date.now()}`,
+      seller_id: user?.id || 'seller-seed',
+      image_url: prod.image,
     };
     if (isSupabaseActive && user) {
       try {
@@ -391,7 +401,12 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         ]).select();
         if (error) throw error;
         if (data) {
-          setProducts((prev) => [...prev, data[0]]);
+          const mappedProduct = {
+            ...data[0],
+            seller: profile?.store_name || profile?.full_name || 'Abuja Supplier',
+            location: profile?.location || 'Gudu Market',
+          };
+          setProducts((prev) => [...prev, mappedProduct]);
         }
       } catch (e) {
         if (!handleSupabaseWriteFallback(e, () => saveLocalProduct(newProduct), 'Failed to add product to Supabase')) {
@@ -404,7 +419,15 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   };
 
   const saveLocalProduct = (p: any) => {
-    const updated = [...products, p];
+    const localProduct = {
+      ...p,
+      seller: profile?.store_name || profile?.full_name || 'Abuja Supplier',
+      location: profile?.location || 'Gudu Market',
+      specs: p.specs || [],
+      rating: 5.0,
+      reviews: 0,
+    };
+    const updated = [...products, localProduct];
     setProducts(updated);
     localStorage.setItem(STORAGE_PREFIX + 'products', JSON.stringify(updated));
   };
@@ -427,8 +450,13 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
           .select();
         if (error) throw error;
         if (data && data.length > 0) {
+          const updatedMapped = {
+            ...data[0],
+            seller: profile?.store_name || profile?.full_name || 'Abuja Supplier',
+            location: profile?.location || 'Gudu Market',
+          };
           setProducts((prev) =>
-            prev.map((p) => (p.id === productId ? { ...p, ...data[0] } : p))
+            prev.map((p) => (p.id === productId ? { ...p, ...updatedMapped } : p))
           );
         }
       } catch (e) {
@@ -858,7 +886,18 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     }
 
     try {
-      const { data, error } = await supabase.auth.signUp({ email, password: pass });
+      const { data, error } = await supabase.auth.signUp({
+        email,
+        password: pass,
+        options: {
+          data: {
+            full_name: fullName,
+            role: roleSelected,
+            workshop_name: roleSelected === 'mechanic' ? businessName : null,
+            store_name: roleSelected === 'seller' ? businessName : null,
+          }
+        }
+      });
       if (error) throw error;
 
       if (data.user) {
@@ -963,9 +1002,27 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     const { data, error } = await supabase.auth.signInWithPassword({ email, password: pass });
     if (error) throw error;
     if (data.user) {
+      const { data: profileData, error: profileError } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', data.user.id);
+      
+      if (profileData && profileData.length > 0) {
+        setProfile(profileData[0]);
+      } else {
+        const defaultProfile = {
+          id: data.user.id,
+          full_name: data.user.user_metadata?.full_name || data.user.email?.split('@')[0] || 'User',
+          role: data.user.user_metadata?.role || 'mechanic',
+          workshop_name: data.user.user_metadata?.role === 'mechanic' ? 'Precision Motors' : null,
+          store_name: data.user.user_metadata?.role === 'seller' ? 'Abuja Parts Hub' : null,
+          location: 'Abuja, Nigeria',
+        };
+        await supabase.from('profiles').insert([defaultProfile]);
+        setProfile(defaultProfile);
+      }
       setUser(data.user);
       setIsLoggedIn(true);
-      fetchUserProfile(data.user.id);
     }
   };
 

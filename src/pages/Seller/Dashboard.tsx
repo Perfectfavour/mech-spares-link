@@ -11,7 +11,7 @@ export default function SellerDashboard() {
 
   const recentOrders = orders.slice(0, 3).map((order) => ({
     id: order.id,
-    customer: profile?.full_name || 'Mechanic',
+    customer: order.buyer_name || 'Mechanic',
     items: order.items?.length || 1,
     total: `₦${(order.total || 0).toLocaleString()}`,
     status: order.status,
@@ -35,10 +35,15 @@ export default function SellerDashboard() {
         {/* Header */}
         <div className="flex justify-between items-start">
           <div>
-            <h2 className="text-2xl font-bold">Abuja Auto Parts</h2>
-            <p className="text-muted-foreground text-sm font-medium">Gudu Market • Shop 45</p>
+            <h2 className="text-2xl font-bold">Hello, {profile?.full_name || 'Seller'} 👋</h2>
+            <p className="text-muted-foreground text-sm font-medium">
+              {profile?.store_name || 'Abuja Auto Parts'} • {profile?.location || 'Gudu Market • Shop 45'}
+            </p>
           </div>
-          <button className="bg-card p-3 rounded-2xl border border-border text-muted-foreground relative">
+          <button 
+            className="bg-card p-3 rounded-2xl border border-border text-muted-foreground relative"
+            onClick={() => navigate('/notifications')}
+          >
             <Bell size={24} />
             <span className="absolute top-2 right-2 w-3 h-3 bg-destructive border-2 border-card rounded-full" />
           </button>

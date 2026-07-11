@@ -12,7 +12,30 @@ export default function ProductDetails() {
   const { addToCart, products } = useApp();
   const [qty, setQty] = useState(1);
 
-  const product = products.find((p) => p.id === id) || products[0];
+  const product = products.find((p) => p.id === id);
+
+  if (!product) {
+    return (
+      <MobileContainer>
+        <div className="p-6 flex items-center gap-4 border-b border-border bg-card">
+          <button onClick={() => navigate(-1)} className="text-foreground">
+            <ArrowLeft size={24} />
+          </button>
+          <h1 className="text-xl font-bold">Product Details</h1>
+        </div>
+        <div className="flex-1 flex flex-col items-center justify-center p-8 text-center space-y-4">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+          <p className="text-muted-foreground text-sm">Loading product details...</p>
+        </div>
+      </MobileContainer>
+    );
+  }
+
+  const specs = Array.isArray(product.specs)
+    ? product.specs
+    : product.specs && typeof product.specs === 'object'
+      ? Object.entries(product.specs).map(([key, value]) => ({ key, value: String(value) }))
+      : [];
 
   const handleAddToCart = () => {
     addToCart({ ...product, quantity: qty });
@@ -106,7 +129,7 @@ export default function ProductDetails() {
 
         {/* Specs */}
         <div className="grid grid-cols-2 gap-4">
-          {product.specs.map((spec) => (
+          {specs.map((spec) => (
             <div key={spec.key} className="bg-muted p-3 rounded-2xl">
               <p className="text-[10px] text-muted-foreground font-medium mb-1 uppercase tracking-wider">{spec.key}</p>
               <p className="text-sm font-bold">{spec.value}</p>

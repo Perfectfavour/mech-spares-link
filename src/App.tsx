@@ -8,6 +8,7 @@ import Splash from './pages/Auth/Splash';
 import Onboarding from './pages/Auth/Onboarding';
 import Login from './pages/Auth/Login';
 import SignUp from './pages/Auth/SignUp';
+import ForgotPassword from './pages/Auth/ForgotPassword';
 
 // Mechanic Pages
 import MechanicHome from './pages/Mechanic/Home';
@@ -38,6 +39,7 @@ function AppRoutes() {
         <Route path="/onboarding" element={<Onboarding />} />
         <Route path="/login" element={<Login />} />
         <Route path="/signup" element={<SignUp />} />
+        <Route path="/forgot-password" element={<ForgotPassword />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     );
