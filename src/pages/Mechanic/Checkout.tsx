@@ -1,6 +1,7 @@
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, MapPin, CreditCard, ChevronRight, Truck } from 'lucide-react';
 import MobileContainer from '@/components/layout/MobileContainer';
+import BottomNav from '@/components/layout/BottomNav';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { useApp } from '@/context/AppContext';
@@ -31,7 +32,7 @@ export default function Checkout() {
   };
 
   return (
-    <MobileContainer>
+    <MobileContainer hasBottomNav>
       <div className="p-6 flex items-center gap-4">
         <button onClick={() => navigate(-1)} className="text-foreground">
           <ArrowLeft size={24} />
@@ -115,11 +116,12 @@ export default function Checkout() {
         </section>
       </div>
 
-      <div className="p-6">
+      <div className="p-6 pb-24">
         <Button size="xl" className="w-full font-bold" onClick={handlePlaceOrder}>
           Place Order
         </Button>
       </div>
+      <BottomNav />
     </MobileContainer>
   );
 }

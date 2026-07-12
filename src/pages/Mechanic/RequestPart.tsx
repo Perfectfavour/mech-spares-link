@@ -1,6 +1,6 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Camera, Upload, CheckCircle2 } from 'lucide-react';
+import { ArrowLeft, Camera, Upload, CheckCircle2, Trash2 } from 'lucide-react';
 import MobileContainer from '@/components/layout/MobileContainer';
 import BottomNav from '@/components/layout/BottomNav';
 import { Button } from '@/components/ui/button';
@@ -8,25 +8,75 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { useApp } from '@/context/AppContext';
+import { supabase } from '@/lib/supabase';
 import { toast } from 'sonner';
 
 export default function RequestPart() {
   const navigate = useNavigate();
-  const { addRequest } = useApp();
+  const { addRequest, isSupabaseActive, user, products } = useApp();
   const [step, setStep] = useState(1);
   const [formData, setFormData] = useState({
     vehicle: '',
     part: '',
     description: '',
+    category: '',
     image: null as string | null
   });
 
   const [loading, setLoading] = useState(false);
+  const [uploading, setUploading] = useState(false);
+
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const cameraInputRef = useRef<HTMLInputElement>(null);
+
+  const convertToBase64 = (file: File): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.readAsDataURL(file);
+      reader.onload = () => resolve(reader.result as string);
+      reader.onerror = (error) => reject(error);
+    });
+  };
+
+  const handleImageFile = async (file: File | undefined) => {
+    if (!file) return;
+    setUploading(true);
+    try {
+      let uploadedUrl = '';
+      if (isSupabaseActive && user) {
+        const fileExt = file.name.split('.').pop() || 'jpg';
+        const fileName = `request-${user.id}-${Date.now()}.${fileExt}`;
+        const filePath = `requests/${fileName}`;
+        
+        const { error: uploadError } = await supabase.storage
+          .from('profile_images')
+          .upload(filePath, file);
+          
+        if (uploadError) {
+          console.warn("Storage upload failed, trying base64 fallback:", uploadError);
+          uploadedUrl = await convertToBase64(file);
+        } else {
+          const { data: { publicUrl } } = supabase.storage
+            .from('profile_images')
+            .getPublicUrl(filePath);
+          uploadedUrl = publicUrl;
+        }
+      } else {
+        uploadedUrl = await convertToBase64(file);
+      }
+      setFormData(prev => ({ ...prev, image: uploadedUrl }));
+      toast.success('Photo added!');
+    } catch (err: any) {
+      toast.error(`Upload failed: ${err.message || err}`);
+    } finally {
+      setUploading(false);
+    }
+  };
 
   const handleNext = async () => {
     if (step < 2) {
-      if (!formData.vehicle.trim() || !formData.part.trim()) {
-        toast.error('Please enter the vehicle and part details.');
+      if (!formData.vehicle.trim() || !formData.part.trim() || !formData.category) {
+        toast.error('Please enter the vehicle, part, and category details.');
         return;
       }
       setStep(step + 1);
@@ -37,8 +87,10 @@ export default function RequestPart() {
           vehicle: formData.vehicle,
           part: formData.part,
           description: formData.description,
+          category: formData.category,
+          image_url: formData.image,
         });
-        toast.success('Request sent to all sellers!');
+        toast.success('Request sent to all matching sellers!');
         navigate('/orders');
       } catch (error: any) {
         toast.error(error.message || 'Failed to submit request.');
@@ -97,6 +149,27 @@ export default function RequestPart() {
               </div>
 
               <div className="space-y-2">
+                <Label htmlFor="category">Category</Label>
+                <select
+                  id="category"
+                  className="w-full h-14 rounded-xl px-4 border border-input bg-card font-medium text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                  value={formData.category}
+                  onChange={(e) => setFormData({...formData, category: e.target.value})}
+                  required
+                >
+                  <option value="" disabled>Select category...</option>
+                  {['Engine', 'Brakes', 'Suspension', 'Transmission', 'Electrical', 'Body', 'Filters'].map((cat) => (
+                    <option key={cat} value={cat}>{cat}</option>
+                  ))}
+                </select>
+                {formData.category && (
+                  <p className="text-[11px] text-primary font-semibold px-1 mt-1">
+                    💡 Sourcing from {new Set(products.filter((p: any) => p.category === formData.category).map((p: any) => p.seller_id)).size} matching sellers in Abuja
+                  </p>
+                )}
+              </div>
+
+              <div className="space-y-2">
                 <Label htmlFor="desc">Additional Details (Optional)</Label>
                 <Textarea 
                   id="desc" 
@@ -116,15 +189,64 @@ export default function RequestPart() {
             </div>
 
             <div className="grid grid-cols-2 gap-4">
-              <button className="aspect-square rounded-3xl border-2 border-dashed border-muted-foreground/30 flex flex-col items-center justify-center gap-2 text-muted-foreground hover:bg-muted/50 transition-colors">
+              <button 
+                type="button"
+                onClick={() => cameraInputRef.current?.click()}
+                disabled={uploading}
+                className="aspect-square rounded-3xl border-2 border-dashed border-muted-foreground/30 flex flex-col items-center justify-center gap-2 text-muted-foreground hover:bg-muted/50 transition-colors disabled:opacity-50"
+              >
                 <Camera size={32} />
                 <span className="text-xs font-bold uppercase tracking-wide">Camera</span>
               </button>
-              <button className="aspect-square rounded-3xl border-2 border-dashed border-muted-foreground/30 flex flex-col items-center justify-center gap-2 text-muted-foreground hover:bg-muted/50 transition-colors">
+              <button 
+                type="button"
+                onClick={() => fileInputRef.current?.click()}
+                disabled={uploading}
+                className="aspect-square rounded-3xl border-2 border-dashed border-muted-foreground/30 flex flex-col items-center justify-center gap-2 text-muted-foreground hover:bg-muted/50 transition-colors disabled:opacity-50"
+              >
                 <Upload size={32} />
                 <span className="text-xs font-bold uppercase tracking-wide">Upload</span>
               </button>
             </div>
+
+            <input 
+              type="file" 
+              accept="image/*" 
+              capture="environment" 
+              ref={cameraInputRef} 
+              className="hidden" 
+              onChange={(e) => handleImageFile(e.target.files?.[0])}
+            />
+            <input 
+              type="file" 
+              accept="image/*" 
+              ref={fileInputRef} 
+              className="hidden" 
+              onChange={(e) => handleImageFile(e.target.files?.[0])}
+            />
+
+            {uploading && (
+              <div className="text-center py-2 text-sm text-muted-foreground animate-pulse">
+                Uploading photo...
+              </div>
+            )}
+
+            {formData.image && (
+              <div className="relative aspect-video rounded-[24px] overflow-hidden border border-border shadow-md mt-4">
+                <img 
+                  src={formData.image} 
+                  alt="Uploaded part preview" 
+                  className="w-full h-full object-cover" 
+                />
+                <button
+                  type="button"
+                  onClick={() => setFormData(prev => ({ ...prev, image: null }))}
+                  className="absolute top-3 right-3 bg-destructive text-destructive-foreground p-2 rounded-full shadow-lg transition-colors cursor-pointer"
+                >
+                  <Trash2 size={16} />
+                </button>
+              </div>
+            )}
 
             <div className="bg-primary/5 p-4 rounded-3xl border border-primary/20 flex gap-4 items-start">
               <div className="text-primary mt-1"><CheckCircle2 size={20} /></div>
@@ -136,7 +258,7 @@ export default function RequestPart() {
         )}
 
         <div className="py-6">
-          <Button size="xl" className="w-full font-bold" onClick={handleNext} disabled={loading}>
+          <Button size="xl" className="w-full font-bold" onClick={handleNext} disabled={loading || uploading}>
             {loading ? 'Submitting...' : step === 1 ? 'Next Step' : 'Submit Request'}
           </Button>
         </div>

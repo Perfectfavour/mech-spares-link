@@ -7,7 +7,7 @@ import { useApp } from '@/context/AppContext';
 
 export default function SellerDashboard() {
   const navigate = useNavigate();
-  const { orders, requests, profile } = useApp();
+  const { orders, requests, offers, profile, user, products } = useApp();
 
   const recentOrders = orders.slice(0, 3).map((order) => ({
     id: order.id,
@@ -18,7 +18,25 @@ export default function SellerDashboard() {
     time: order.date || 'Just now',
   }));
 
-  const pendingRequests = requests.slice(0, 3).map((req) => ({
+  // 1. Get the list of categories the seller sells
+  const sellerCategories = Array.from(
+    new Set(products.filter((p) => p.seller_id === user?.id).map((p) => p.category))
+  );
+
+  // 2. Find request IDs where this seller already sent an offer
+  const sellerRespondedRequestIds = new Set(
+    offers.filter((o) => o.seller_id === user?.id).map((o) => o.request_id)
+  );
+
+  // 3. Filter pending requests: matches seller's category, status is pending, and seller hasn't responded yet
+  const filteredRequests = requests.filter(
+    (req) =>
+      sellerCategories.includes(req.category) &&
+      req.status === 'pending' &&
+      !sellerRespondedRequestIds.has(req.id)
+  );
+
+  const pendingRequests = filteredRequests.slice(0, 3).map((req) => ({
     id: req.id,
     customer: req.customer || req.vehicle || 'Mechanic',
     part: req.part,
@@ -35,12 +53,12 @@ export default function SellerDashboard() {
         {/* Header */}
         <div className="flex justify-between items-start">
           <div>
-            <h2 className="text-2xl font-bold">Hello, {profile?.full_name || 'Seller'} 👋</h2>
+            <h2 className="text-2xl font-bold">Hello, {profile?.full_name || 'Seller'}</h2>
             <p className="text-muted-foreground text-sm font-medium">
               {profile?.store_name || 'Abuja Auto Parts'} • {profile?.location || 'Gudu Market • Shop 45'}
             </p>
           </div>
-          <button 
+          <button
             className="bg-card p-3 rounded-2xl border border-border text-muted-foreground relative"
             onClick={() => navigate('/notifications')}
           >
@@ -71,11 +89,11 @@ export default function SellerDashboard() {
           </Card>
         </div>
 
-        {/* Part Requests Signature Feature Notification */}
+        {/* Part Requests Notification */}
         {pendingRequests.length > 0 && (
-          <Card 
+          <Card
             className="p-5 bg-amber-50 border-2 border-amber-200 rounded-[32px] flex items-center gap-4 cursor-pointer active:scale-[0.98] transition-all"
-            onClick={() => navigate(`/messages?recipientId=${pendingRequests[0].mechanic_id || 'mech-seed'}`)}
+            onClick={() => navigate(`/messages?recipientId=${pendingRequests[0].mechanic_id || 'mech-seed'}&requestId=${pendingRequests[0].id}`)}
           >
             <div className="bg-amber-100 p-4 rounded-2xl text-amber-600">
               <MessageCircle size={32} />
@@ -83,11 +101,29 @@ export default function SellerDashboard() {
             <div className="flex-1">
               <h4 className="font-bold text-amber-900 leading-tight">New Part Request</h4>
               <p className="text-xs text-amber-700 mt-1">
-                {/* {pendingRequests[0].customer} is looking for a {pendingRequests[0].part}. */}
                 Customer is looking for a {pendingRequests[0].part} for {pendingRequests[0].vehicle}.
               </p>
             </div>
             <ChevronRight size={20} className="text-amber-400" />
+          </Card>
+        )}
+
+        {/* Suggestion to set up inventory if seller has no categories */}
+        {sellerCategories.length === 0 && (
+          <Card
+            className="p-5 bg-blue-50 border border-blue-200 rounded-[32px] flex items-center gap-4 cursor-pointer active:scale-[0.98] transition-all"
+            onClick={() => navigate('/inventory')}
+          >
+            <div className="bg-blue-100 p-4 rounded-2xl text-blue-600">
+              <ShoppingBag size={32} />
+            </div>
+            <div className="flex-1">
+              <h4 className="font-bold text-blue-900 leading-tight">Set Up Your Inventory</h4>
+              <p className="text-xs text-blue-700 mt-1">
+                List products in your store to start receiving matching requests from mechanics.
+              </p>
+            </div>
+            <ChevronRight size={20} className="text-blue-400" />
           </Card>
         )}
 
@@ -99,14 +135,13 @@ export default function SellerDashboard() {
           </div>
           <div className="space-y-3">
             {recentOrders.map((order) => (
-              <Card 
-                key={order.id} 
+              <Card
+                key={order.id}
                 className="p-4 rounded-3xl border border-border shadow-sm flex items-center gap-4 active:scale-[0.98] transition-transform"
                 onClick={() => navigate(`/order/${order.id}`)}
               >
-                <div className={`w-12 h-12 rounded-2xl flex items-center justify-center shrink-0 ${
-                  order.status === 'New' ? 'bg-primary text-white' : 'bg-muted text-muted-foreground'
-                }`}>
+                <div className={`w-12 h-12 rounded-2xl flex items-center justify-center shrink-0 ${order.status === 'New' ? 'bg-primary text-white' : 'bg-muted text-muted-foreground'
+                  }`}>
                   <Package size={24} />
                 </div>
                 <div className="flex-1">
@@ -116,9 +151,8 @@ export default function SellerDashboard() {
                   </div>
                   <div className="flex justify-between items-end mt-1">
                     <p className="text-xs text-muted-foreground">{order.items} items • {order.total}</p>
-                    <span className={`text-[10px] font-black px-2 py-0.5 rounded-full uppercase ${
-                      order.status === 'New' ? 'bg-primary/10 text-primary' : 'bg-muted text-muted-foreground'
-                    }`}>
+                    <span className={`text-[10px] font-black px-2 py-0.5 rounded-full uppercase ${order.status === 'New' ? 'bg-primary/10 text-primary' : 'bg-muted text-muted-foreground'
+                      }`}>
                       {order.status}
                     </span>
                   </div>

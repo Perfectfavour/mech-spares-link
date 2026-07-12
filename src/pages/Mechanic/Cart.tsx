@@ -1,6 +1,7 @@
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, Trash2, Plus, Minus, ShoppingBag } from 'lucide-react';
 import MobileContainer from '@/components/layout/MobileContainer';
+import BottomNav from '@/components/layout/BottomNav';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { useApp } from '@/context/AppContext';
@@ -15,14 +16,14 @@ export default function Cart() {
 
   if (cart.length === 0) {
     return (
-      <MobileContainer>
+      <MobileContainer hasBottomNav>
         <div className="p-6 flex items-center gap-4">
           <button onClick={() => navigate(-1)} className="text-foreground">
             <ArrowLeft size={24} />
           </button>
           <h1 className="text-xl font-bold">Your Cart</h1>
         </div>
-        <div className="flex-1 flex flex-col items-center justify-center p-8 text-center space-y-6">
+        <div className="flex-1 flex flex-col items-center justify-center p-8 text-center space-y-6 pb-24">
           <div className="w-24 h-24 bg-muted rounded-full flex items-center justify-center text-muted-foreground">
             <ShoppingBag size={48} />
           </div>
@@ -34,12 +35,13 @@ export default function Cart() {
             Start Shopping
           </Button>
         </div>
+        <BottomNav />
       </MobileContainer>
     );
   }
 
   return (
-    <MobileContainer>
+    <MobileContainer hasBottomNav>
       <div className="p-6 flex items-center gap-4">
         <button onClick={() => navigate(-1)} className="text-foreground">
           <ArrowLeft size={24} />
@@ -86,7 +88,7 @@ export default function Cart() {
         ))}
       </div>
 
-      <div className="bg-card border-t border-border p-8 space-y-6">
+      <div className="bg-card border-t border-border p-8 space-y-6 pb-24">
         <div className="space-y-3">
           <div className="flex justify-between text-sm">
             <span className="text-muted-foreground">Subtotal</span>
@@ -105,6 +107,7 @@ export default function Cart() {
           Proceed to Checkout
         </Button>
       </div>
+      <BottomNav />
     </MobileContainer>
   );
 }

@@ -11,7 +11,7 @@ import { toast } from 'sonner';
 
 export default function Notifications() {
   const navigate = useNavigate();
-  const { user, messages, orders, requests, offers, updateProfile } = useApp();
+  const { user, messages, orders, requests, offers, updateProfile, products } = useApp();
   const [query, setQuery] = useState('');
   const [notifications, setNotifications] = useState<any[]>([]);
   const [deletedIds, setDeletedIds] = useState<Set<string>>(new Set());
@@ -82,6 +82,34 @@ export default function Notifications() {
             read: false
           });
         });
+
+        // Request alerts for matching categories (for sellers)
+        const sellerCategories = Array.from(
+          new Set(products.filter((p) => p.seller_id === user.id).map((p) => p.category))
+        );
+        const sellerRespondedRequestIds = new Set(
+          offers.filter((o) => o.seller_id === user.id).map((o) => o.request_id)
+        );
+        const matchingRequests = requests.filter(
+          (r) =>
+            sellerCategories.includes(r.category) &&
+            r.status === 'pending' &&
+            !sellerRespondedRequestIds.has(r.id)
+        );
+
+        matchingRequests.forEach((request) => {
+          if (deletedIds.has(`seller-request-${request.id}`)) return;
+          newNotifications.push({
+            id: `seller-request-${request.id}`,
+            title: `New Request: ${request.part}`,
+            message: `A mechanic is looking for a ${request.part} for a ${request.vehicle}. Click to chat and quote.`,
+            time: request.date,
+            type: 'seller-request',
+            referenceId: request.id,
+            mechanicId: request.mechanic_id,
+            read: false,
+          });
+        });
       }
 
       // Message notifications
@@ -107,7 +135,7 @@ export default function Notifications() {
   // Initialize notifications on mount
   useEffect(() => {
     setNotifications(generateNotifications());
-  }, [user, messages, orders, requests, offers]);
+  }, [user, messages, orders, requests, offers, products]);
 
   const filteredNotifications = notifications.filter((item) =>
     item.title.toLowerCase().includes(query.toLowerCase()) ||
@@ -147,6 +175,9 @@ export default function Notifications() {
         break;
       case 'request':
         navigate(`/request/${notification.referenceId}`);
+        break;
+      case 'seller-request':
+        navigate(`/messages?recipientId=${notification.mechanicId}&requestId=${notification.referenceId}`);
         break;
       case 'offer':
         navigate(`/offer/${notification.referenceId}`);

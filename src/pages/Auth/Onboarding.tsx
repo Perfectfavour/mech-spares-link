@@ -76,29 +76,29 @@ export default function Onboarding() {
       </div>
 
       {/* Bottom Actions Bar */}
-      <div className="w-full pt-4 pb-1">
+      <div className="w-full pt-6 pb-2">
         {current < slides.length - 1 ? (
           <div className="flex items-center justify-between w-full px-2">
             <button 
               onClick={() => navigate('/login')} 
-              className="text-[10px] font-bold text-muted-foreground/60 hover:text-foreground active:scale-95 transition-all bg-transparent border-none py-1 cursor-pointer tracking-wider"
+              className="text-xs font-bold text-muted-foreground hover:text-foreground active:scale-95 transition-all bg-transparent border-none py-2 px-4 cursor-pointer tracking-widest uppercase"
             >
-              SKIP
+              Skip
             </button>
             <Button 
               onClick={next} 
-              className="rounded-full font-bold px-5 h-8 text-[10px] tracking-wider shadow-sm cursor-pointer"
+              className="rounded-full font-bold px-6 h-10 text-xs tracking-widest shadow-md cursor-pointer uppercase"
             >
-              NEXT
+              Next
             </Button>
           </div>
         ) : (
           <div className="flex items-center justify-center w-full px-2">
             <Button 
               onClick={next} 
-              className="rounded-full font-bold px-10 h-8 text-[10px] tracking-wider shadow-sm cursor-pointer"
+              className="w-full rounded-full font-bold px-10 h-11 text-xs tracking-widest shadow-md cursor-pointer uppercase"
             >
-              GET STARTED
+              Get Started
             </Button>
           </div>
         )}

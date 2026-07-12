@@ -1,5 +1,5 @@
 import React from 'react';
-import { Search, MapPin, Bell, ChevronRight, Star, PlusCircle } from 'lucide-react';
+import { Search, MapPin, Bell, ChevronRight, Star, PlusCircle, Wrench, CircleDot, Sliders, Settings2, Zap, Car, Filter } from 'lucide-react';
 import MobileContainer from '@/components/layout/MobileContainer';
 import BottomNav from '@/components/layout/BottomNav';
 import { Input } from '@/components/ui/input';
@@ -9,13 +9,13 @@ import { useNavigate } from 'react-router-dom';
 import { useApp } from '@/context/AppContext';
 
 const categories = [
-  { id: 1, name: 'Engine', icon: '⚙️' },
-  { id: 2, name: 'Brakes', icon: '🛑' },
-  { id: 3, name: 'Suspension', icon: '🛠️' },
-  { id: 4, name: 'Transmission', icon: '🛠️' },
-  { id: 5, name: 'Electrical', icon: '⚡' },
-  { id: 6, name: 'Body', icon: '🚗' },
-  { id: 7, name: 'Filters', icon: '🧪' },
+  { id: 1, name: 'Engine', icon: Wrench },
+  { id: 2, name: 'Brakes', icon: CircleDot },
+  { id: 3, name: 'Suspension', icon: Sliders },
+  { id: 4, name: 'Transmission', icon: Settings2 },
+  { id: 5, name: 'Electrical', icon: Zap },
+  { id: 6, name: 'Body', icon: Car },
+  { id: 7, name: 'Filters', icon: Filter },
 ];
 
 export default function MechanicHome() {
@@ -35,7 +35,7 @@ export default function MechanicHome() {
               <MapPin size={14} />
               <span>Garki, Abuja</span>
             </div>
-            <h2 className="text-2xl font-bold">Hello, {userName} 👋</h2>
+            <h2 className="text-2xl font-bold">Hello, {userName}</h2>
           </div>
           <button className="bg-card p-3 rounded-2xl border border-border text-muted-foreground" onClick={() => navigate('/notifications')}>
             <Bell size={24} />
@@ -45,8 +45,8 @@ export default function MechanicHome() {
         {/* Search Bar */}
         <div className="relative" onClick={() => navigate('/search')}>
           <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground" size={20} />
-          <Input 
-            placeholder="Search for parts (e.g. Camry Brake Pads)" 
+          <Input
+            placeholder="Search for parts (e.g. Camry Brake Pads)"
             className="h-14 rounded-2xl pl-12 bg-card border-none shadow-sm cursor-pointer"
             readOnly
           />
@@ -59,8 +59,8 @@ export default function MechanicHome() {
             <p className="text-primary-foreground/90 text-sm">
               Send a request to all sellers in Abuja and get offers in minutes.
             </p>
-            <Button 
-              variant="secondary" 
+            <Button
+              variant="secondary"
               className="rounded-xl font-bold gap-2 text-primary"
               onClick={() => navigate('/request-part')}
             >
@@ -80,16 +80,21 @@ export default function MechanicHome() {
             <button className="text-primary font-bold text-sm">See All</button>
           </div>
           <div className="grid grid-cols-3 gap-4">
-            {categories.map((cat) => (
-              <div 
-                key={cat.id} 
-                className="bg-card p-4 rounded-3xl flex flex-col items-center gap-2 border border-border shadow-sm active:scale-95 transition-transform cursor-pointer"
-                onClick={() => navigate(`/search?category=${cat.name}`)}
-              >
-                <span className="text-2xl">{cat.icon}</span>
-                <span className="text-xs font-bold text-center">{cat.name}</span>
-              </div>
-            ))}
+            {categories.map((cat) => {
+              const Icon = cat.icon;
+              return (
+                <div
+                  key={cat.id}
+                  className="bg-card p-4 rounded-3xl flex flex-col items-center gap-2 border border-border shadow-sm active:scale-95 hover:bg-primary/5 hover:border-primary/20 hover:-translate-y-1 hover:shadow-md transition-all duration-300 cursor-pointer"
+                  onClick={() => navigate(`/search?category=${cat.name}`)}
+                >
+                  <div className="text-primary p-2 bg-primary/10 rounded-2xl">
+                    <Icon size={20} />
+                  </div>
+                  <span className="text-xs font-bold text-center">{cat.name}</span>
+                </div>
+              );
+            })}
           </div>
         </div>
 
@@ -101,8 +106,8 @@ export default function MechanicHome() {
           </div>
           <div className="space-y-4">
             {trendingParts.map((part) => (
-              <Card 
-                key={part.id} 
+              <Card
+                key={part.id}
                 className="p-4 rounded-3xl border border-border shadow-sm flex gap-4 active:scale-[0.98] transition-transform cursor-pointer"
                 onClick={() => navigate(`/product/${part.id}`)}
               >

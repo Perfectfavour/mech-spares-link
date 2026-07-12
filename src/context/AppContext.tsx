@@ -670,6 +670,8 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
           vehicle: r.vehicle,
           part: r.part,
           description: r.description,
+          image_url: r.image_url,
+          category: r.category,
           status: r.status,
           date: r.created_at.split('T')[0],
           responses: offers.filter((o) => o.request_id === r.id) || [],
@@ -698,6 +700,8 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
               vehicle: req.vehicle,
               part: req.part,
               description: req.description,
+              image_url: req.image_url,
+              category: req.category,
               status: 'pending',
             }
           ])
@@ -712,6 +716,8 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
               vehicle: data.vehicle,
               part: data.part,
               description: data.description,
+              image_url: data.image_url,
+              category: data.category,
               status: data.status,
               date: data.created_at.split('T')[0],
               responses: [],

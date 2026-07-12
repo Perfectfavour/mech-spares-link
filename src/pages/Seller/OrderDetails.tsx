@@ -9,12 +9,18 @@ import { useApp } from '@/context/AppContext';
 export default function SellerOrderDetails() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { orders } = useApp();
+  const { orders, updateOrderStatus } = useApp();
 
   const order = orders.find((o) => o.id === id);
 
-  const handleAccept = () => {
-    toast.success('Order accepted! Please prepare the items.');
+  const handleStatusUpdate = async (nextStatus: string) => {
+    if (!order) return;
+    try {
+      await updateOrderStatus(order.id, nextStatus);
+      toast.success(`Order status updated to ${nextStatus}!`);
+    } catch (err) {
+      toast.error('Failed to update order status.');
+    }
   };
 
   if (!order) {
@@ -124,12 +130,47 @@ export default function SellerOrderDetails() {
       </div>
 
       <div className="fixed bottom-0 left-0 right-0 max-w-md mx-auto p-6 bg-background/80 backdrop-blur-lg border-t border-border flex gap-4">
-        <Button variant="outline" size="xl" className="flex-1 border-2 font-bold rounded-2xl">
-          Decline
-        </Button>
-        <Button size="xl" className="flex-[2] font-bold rounded-2xl shadow-lg shadow-primary/20" onClick={handleAccept}>
-          Accept Order
-        </Button>
+        {order.status === 'Delivered' ? (
+          <Button size="xl" className="w-full font-bold rounded-2xl" disabled>
+            Order Delivered
+          </Button>
+        ) : order.status === 'Cancelled' ? (
+          <Button size="xl" className="w-full font-bold rounded-2xl bg-destructive text-destructive-foreground" disabled>
+            Order Cancelled
+          </Button>
+        ) : (
+          <>
+            {order.status === 'Confirmed' && (
+              <Button 
+                variant="outline" 
+                size="xl" 
+                className="flex-1 border-2 font-bold rounded-2xl"
+                onClick={() => handleStatusUpdate('Cancelled')}
+              >
+                Decline
+              </Button>
+            )}
+            <Button 
+              size="xl" 
+              className="flex-[2] font-bold rounded-2xl shadow-lg shadow-primary/20" 
+              onClick={() => {
+                const nextStatusMap: Record<string, string> = {
+                  'Confirmed': 'Preparing',
+                  'Preparing': 'Dispatched',
+                  'Dispatched': 'Out for Delivery',
+                  'Out for Delivery': 'Delivered'
+                };
+                const nextStatus = nextStatusMap[order.status || 'Confirmed'] || 'Preparing';
+                handleStatusUpdate(nextStatus);
+              }}
+            >
+              {order.status === 'Confirmed' ? 'Accept Order' :
+               order.status === 'Preparing' ? 'Dispatch Order' :
+               order.status === 'Dispatched' ? 'Mark Out for Delivery' :
+               'Mark as Delivered'}
+            </Button>
+          </>
+        )}
       </div>
     </MobileContainer>
   );

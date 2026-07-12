@@ -7,11 +7,12 @@ import { Input } from '@/components/ui/input';
 import { Card } from '@/components/ui/card';
 import { useApp } from '@/context/AppContext';
 import { supabase } from '@/lib/supabase';
+import { toast } from 'sonner';
 
 export default function Messages() {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
-  const { messages, user, profile, sendMessage, isSupabaseActive } = useApp();
+  const { messages, user, profile, sendMessage, isSupabaseActive, addOffer, offers } = useApp();
   const [query, setQuery] = useState('');
   const [draft, setDraft] = useState('');
   const [recipientNames, setRecipientNames] = useState<Record<string, string>>({
@@ -108,8 +109,45 @@ export default function Messages() {
 
   const handleSend = async () => {
     if (!draft.trim() || !selectedRecipient) return;
-    await sendMessage(selectedRecipient, draft.trim());
+
+    const draftText = draft.trim();
+    await sendMessage(selectedRecipient, draftText);
     setDraft('');
+
+    const requestId = searchParams.get('requestId');
+    const isSeller = profile?.role === 'seller' || user?.user_metadata?.role === 'seller';
+
+    if (isSeller && requestId) {
+      const digits = draftText.replace(/,/g, '').match(/\d+/);
+
+      if (digits) {
+        const alreadyResponded = offers.some(
+          (o: any) => o.request_id === requestId && o.seller_id === currentUserId
+        );
+
+        if (!alreadyResponded) {
+          const price = Number(digits[0]);
+
+          try {
+            await addOffer({
+              request_id: requestId,
+              price,
+              availability: 'In Stock',
+              delivery_estimate: 'Same Day',
+              pickup_option: true,
+              notes: draftText,
+            });
+            toast.success('Offer submitted to buyer!');
+
+            // Clean query parameter only when offer is successfully submitted
+            searchParams.delete('requestId');
+            setSearchParams(searchParams);
+          } catch (err) {
+            console.error('Error submitting offer via message:', err);
+          }
+        }
+      }
+    }
   };
 
   return (

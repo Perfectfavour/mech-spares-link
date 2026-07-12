@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowLeft, Star, MapPin, ShieldCheck, Truck, MessageSquare, ShoppingCart, Minus, Plus } from 'lucide-react';
 import MobileContainer from '@/components/layout/MobileContainer';
+import BottomNav from '@/components/layout/BottomNav';
 import { Button } from '@/components/ui/button';
 import { useApp } from '@/context/AppContext';
 import { toast } from 'sonner';
@@ -52,7 +53,7 @@ export default function ProductDetails() {
   const formattedPrice = typeof product.price === 'number' ? `₦${product.price.toLocaleString()}` : product.price;
 
   return (
-    <MobileContainer>
+    <MobileContainer hasBottomNav>
       {/* Product Image */}
       <div className="relative h-80">
         <img src={product.image || product.image_url} alt={product.name} className="w-full h-full object-cover" />
@@ -139,7 +140,7 @@ export default function ProductDetails() {
       </div>
 
       {/* Bottom Action Bar */}
-      <div className="sticky bottom-0 bg-background/80 backdrop-blur-lg border-t border-border p-6 flex gap-4 items-center">
+      <div className="sticky bottom-0 bg-background/80 backdrop-blur-lg border-t border-border p-6 flex gap-4 items-center pb-24">
         <div className="flex items-center bg-muted rounded-2xl p-1 shrink-0">
           <button 
             onClick={() => setQty(Math.max(1, qty - 1))}
@@ -160,6 +161,7 @@ export default function ProductDetails() {
           Add to Cart
         </Button>
       </div>
+      <BottomNav />
     </MobileContainer>
   );
 }
