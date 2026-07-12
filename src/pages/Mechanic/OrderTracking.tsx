@@ -21,7 +21,7 @@ export default function OrderTracking() {
     { label: 'Preparing', icon: Package, desc: 'Seller is packaging your spare parts' },
     { label: 'Dispatched', icon: Truck, desc: 'Package picked up by courier' },
     { label: 'Out for Delivery', icon: MapPinned, desc: 'Rider is arriving at your workshop' },
-    { label: 'Delivered', icon: CheckCircle2, desc: 'Spare parts received and checked' },
+    { label: 'Delivered', icon: CheckCircle2, desc: 'Spare Parts received and checked' },
   ];
 
   const statusOrder = ['Confirmed', 'Preparing', 'Dispatched', 'Out for Delivery', 'Delivered'];
