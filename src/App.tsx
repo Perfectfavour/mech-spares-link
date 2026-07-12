@@ -22,6 +22,10 @@ import OrderTracking from './pages/Mechanic/OrderTracking';
 import Messages from './pages/Shared/Messages';
 import Notifications from './pages/Shared/Notifications';
 import Profile from './pages/Shared/Profile';
+import Addresses from './pages/Shared/Addresses';
+import NotificationSettings from './pages/Shared/NotificationSettings';
+import PrivacySettings from './pages/Shared/PrivacySettings';
+import AppSettings from './pages/Shared/AppSettings';
 
 // Seller Pages
 import SellerDashboard from './pages/Seller/Dashboard';
@@ -69,6 +73,10 @@ function AppRoutes() {
       <Route path="/messages" element={<Messages />} />
       <Route path="/notifications" element={<Notifications />} />
       <Route path="/profile" element={<Profile />} />
+      <Route path="/addresses" element={<Addresses />} />
+      <Route path="/notification-settings" element={<NotificationSettings />} />
+      <Route path="/privacy" element={<PrivacySettings />} />
+      <Route path="/app-settings" element={<AppSettings />} />
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   );

@@ -198,7 +198,7 @@ export default function Inventory() {
         </div>
 
         {/* Category Tabs - Horizontally Scrollable Layout */}
-        <div className="w-full overflow-x-auto no-scrollbar py-1">
+        <div className="w-full overflow-x-auto custom-scrollbar pb-2">
           <div className="flex gap-2 w-max px-1">
             {['All', ...categories].map((cat) => (
               <button 

@@ -72,7 +72,7 @@ export default function SearchResults() {
         </div>
         
         {/* Category Tabs - Horizontally Scrollable Slider */}
-        <div className="w-full overflow-x-auto no-scrollbar py-1">
+        <div className="w-full overflow-x-auto custom-scrollbar pb-2">
           <div className="flex gap-2 w-max px-1">
             {categories.map((category) => (
               <button
@@ -91,7 +91,7 @@ export default function SearchResults() {
         </div>
 
         {/* Other Filters Row */}
-        <div className="flex gap-2 overflow-x-auto no-scrollbar py-1">
+        <div className="flex gap-2 overflow-x-auto custom-scrollbar pb-2">
           <button 
             className={`px-4 py-2.5 rounded-full text-xs font-bold whitespace-nowrap border transition-all cursor-pointer ${
               condition === 'Any' ? 'bg-primary text-white border-primary shadow-md shadow-primary/10' : 'bg-muted text-foreground border-border'

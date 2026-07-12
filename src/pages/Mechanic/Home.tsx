@@ -46,7 +46,7 @@ export default function MechanicHome() {
             </div>
             <h2 className="text-2xl font-bold">Hello, {userName}</h2>
           </div>
-          <button className="bg-card p-3 rounded-2xl border border-border text-muted-foreground" onClick={() => navigate('/notifications')}>
+          <button className="bg-card p-3 rounded-2xl border border-border text-muted-foreground cursor-pointer" onClick={() => navigate('/notifications')}>
             <Bell size={24} />
           </button>
         </div>

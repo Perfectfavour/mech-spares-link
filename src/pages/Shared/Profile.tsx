@@ -48,6 +48,9 @@ export default function Profile() {
       setBio(profile.bio || '');
       setProfileImage(profile.profile_image || '');
       setCoverImage(profile.cover_image || '');
+      if (profile.privacy_settings) {
+        setPrivacySettings(profile.privacy_settings);
+      }
     }
   }, [profile]);
 
@@ -201,7 +204,7 @@ export default function Profile() {
       }
     }},
     { icon: MapPin, label: 'Manage Addresses', action: () => navigate('/addresses') },
-    { icon: Bell, label: 'Notifications', action: () => navigate('/notifications') },
+    { icon: Bell, label: 'Notification Settings', action: () => navigate('/notification-settings') },
     { icon: Shield, label: 'Privacy & Security', action: () => navigate('/privacy') },
     { icon: Settings, label: 'App Settings', action: () => navigate('/app-settings') },
   ];

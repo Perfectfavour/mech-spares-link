@@ -19,7 +19,7 @@ interface AppState {
   updateCartItemQty: (idx: number, qty: number) => void;
   clearCart: () => void;
   orders: any[];
-  addOrder: (order: any) => Promise<void>;
+  addOrder: (order: any) => Promise<string>;
   updateOrderStatus: (orderId: string, status: string) => Promise<void>;
   requests: any[];
   addRequest: (req: any) => Promise<void>;
@@ -56,7 +56,7 @@ const fallbackAppState: AppState = {
   updateCartItemQty: () => undefined,
   clearCart: () => undefined,
   orders: [],
-  addOrder: async () => undefined,
+  addOrder: async () => '',
   updateOrderStatus: async () => undefined,
   requests: [],
   addRequest: async () => undefined,
@@ -558,7 +558,8 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
-  const addOrder = async (order: any) => {
+  const addOrder = async (order: any): Promise<string> => {
+    let finalId = order.id;
     if (isSupabaseActive && user) {
       try {
         const { data: ord, error } = await supabase
@@ -579,6 +580,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         if (error) throw error;
 
         if (ord) {
+          finalId = ord.id;
           // Insert order items
           const itemsToInsert = order.items.map((item: any) => ({
             order_id: ord.id,
@@ -596,7 +598,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
                 .from('products')
                 .insert([
                   {
-                    seller_id: user.id,
+                    seller_id: order.items[i].seller_id || 'seller-seed',
                     name: order.items[i].name,
                     price: order.items[i].price,
                     category: order.items[i].category || 'Brakes',
@@ -631,6 +633,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       saveLocalOrder(order);
     }
     clearCart();
+    return finalId;
   };
 
   const saveLocalOrder = (o: any) => {

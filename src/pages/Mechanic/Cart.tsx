@@ -59,7 +59,7 @@ export default function Cart() {
               <div className="flex justify-between items-start">
                 <h4 className="font-bold text-sm line-clamp-1">{item.name}</h4>
                 <button
-                  className="text-destructive p-3 min-h-12 min-w-12 flex items-center justify-center"
+                  className="text-destructive p-3 min-h-12 min-w-12 flex items-center justify-center cursor-pointer hover:text-destructive/50 transition-colors duration-200 ease-in-out"
                   onClick={() => removeFromCart(idx)}
                 >
                   <Trash2 size={16} />
@@ -103,7 +103,7 @@ export default function Cart() {
             <span className="font-black text-primary">₦{total.toLocaleString()}</span>
           </div>
         </div>
-        <Button size="xl" className="w-full font-bold" onClick={() => navigate('/checkout')}>
+        <Button size="xl" className="w-full font-bold cursor-pointer" onClick={() => navigate('/checkout')}>
           Proceed to Checkout
         </Button>
       </div>

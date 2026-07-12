@@ -2,6 +2,7 @@ import { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Wrench } from 'lucide-react';
 import { motion } from 'framer-motion';
+import MobileContainer from '@/components/layout/MobileContainer';
 
 export default function Splash() {
   const navigate = useNavigate();
@@ -14,7 +15,7 @@ export default function Splash() {
   }, [navigate]);
 
   return (
-    <div className="min-h-screen bg-primary flex flex-col items-center justify-center text-primary-foreground">
+    <MobileContainer className="bg-primary flex flex-col items-center justify-center text-primary-foreground">
       <motion.div
         initial={{ scale: 0.8, opacity: 0 }}
         animate={{ scale: 1, opacity: 1 }}
@@ -27,6 +28,6 @@ export default function Splash() {
         <h1 className="text-4xl font-bold tracking-tight">FixLink</h1>
         <p className="text-primary-foreground/80 font-medium">Genuine Parts, Faster.</p>
       </motion.div>
-    </div>
+    </MobileContainer>
   );
 }

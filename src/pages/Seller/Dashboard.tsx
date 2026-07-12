@@ -9,14 +9,22 @@ export default function SellerDashboard() {
   const navigate = useNavigate();
   const { orders, requests, offers, profile, user, products } = useApp();
 
-  const recentOrders = orders.slice(0, 3).map((order) => ({
-    id: order.id,
-    customer: order.buyer_name || 'Mechanic',
-    items: order.items?.length || 1,
-    total: `₦${(order.total || 0).toLocaleString()}`,
-    status: order.status,
-    time: order.date || 'Just now',
-  }));
+  const sellerOrders = orders.filter((order) =>
+    order.items?.some((item: any) => item.seller_id === user?.id)
+  );
+
+  const recentOrders = sellerOrders.slice(0, 3).map((order) => {
+    const sellerItems = order.items.filter((i: any) => i.seller_id === user?.id);
+    const sellerTotal = sellerItems.reduce((acc: number, item: any) => acc + (item.price * (item.quantity || 1)), 0);
+    return {
+      id: order.id,
+      customer: order.buyer_name || 'Mechanic',
+      items: sellerItems.length,
+      total: `₦${sellerTotal.toLocaleString()}`,
+      status: order.status,
+      time: order.date || 'Just now',
+    };
+  });
 
   // 1. Get the list of categories the seller sells
   const sellerCategories = Array.from(
@@ -45,7 +53,11 @@ export default function SellerDashboard() {
     time: req.date || 'Just now',
   }));
 
-  const salesTotal = orders.reduce((sum, order) => sum + (Number(order.total) || 0), 0);
+  const salesTotal = sellerOrders.reduce((sum, order) => {
+    const sellerItems = order.items.filter((i: any) => i.seller_id === user?.id);
+    const sellerTotal = sellerItems.reduce((acc: number, item: any) => acc + (item.price * (item.quantity || 1)), 0);
+    return sum + sellerTotal;
+  }, 0);
 
   return (
     <MobileContainer hasBottomNav>
@@ -59,7 +71,7 @@ export default function SellerDashboard() {
             </p>
           </div>
           <button
-            className="bg-card p-3 rounded-2xl border border-border text-muted-foreground relative"
+            className="bg-card p-3 rounded-2xl border border-border cursor-pointer text-muted-foreground relative"
             onClick={() => navigate('/notifications')}
           >
             <Bell size={24} />
@@ -84,7 +96,7 @@ export default function SellerDashboard() {
             </div>
             <div>
               <p className="text-xs text-muted-foreground font-medium">Active Orders</p>
-              <p className="text-xl font-black text-foreground">{orders.length}</p>
+              <p className="text-xl font-black text-foreground">{sellerOrders.length}</p>
             </div>
           </Card>
         </div>
@@ -131,7 +143,7 @@ export default function SellerDashboard() {
         <div className="space-y-4">
           <div className="flex justify-between items-center px-1">
             <h3 className="text-xl font-bold">Recent Orders</h3>
-            <button className="text-primary font-bold text-sm">View All</button>
+            <button className="text-primary font-bold text-sm cursor-pointer">View All</button>
           </div>
           <div className="space-y-3">
             {recentOrders.map((order) => (

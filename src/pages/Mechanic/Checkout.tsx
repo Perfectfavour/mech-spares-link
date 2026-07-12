@@ -20,7 +20,7 @@ export default function Checkout() {
     }
 
     const orderId = `ord-${Math.floor(Math.random() * 10000)}`;
-    await addOrder({
+    const finalId = await addOrder({
       id: orderId,
       items: cart,
       total,
@@ -28,7 +28,7 @@ export default function Checkout() {
       date: new Date().toISOString().split('T')[0]
     });
     toast.success('Order placed successfully!');
-    navigate(`/order-tracking/${orderId}`);
+    navigate(`/order-tracking/${finalId || orderId}`);
   };
 
   return (
@@ -117,7 +117,7 @@ export default function Checkout() {
       </div>
 
       <div className="p-6 pb-24">
-        <Button size="xl" className="w-full font-bold" onClick={handlePlaceOrder}>
+        <Button size="xl" className="w-full font-bold cursor-pointer" onClick={handlePlaceOrder}>
           Place Order
         </Button>
       </div>

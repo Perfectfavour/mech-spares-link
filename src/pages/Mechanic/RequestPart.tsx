@@ -91,13 +91,13 @@ export default function RequestPart() {
       if (isSupabaseActive && user) {
         const fileName = `request-${user.id}-${Date.now()}.jpg`;
         const filePath = `requests/${fileName}`;
-        
+
         const { error: uploadError } = await supabase.storage
           .from('profile_images')
           .upload(filePath, compressedBlob, {
             contentType: 'image/jpeg'
           });
-          
+
         if (uploadError) {
           console.warn("Storage upload failed, trying base64 fallback:", uploadError);
           uploadedUrl = await convertBlobToBase64(compressedBlob);
@@ -172,25 +172,25 @@ export default function RequestPart() {
             <div className="space-y-4">
               <div className="space-y-2">
                 <Label htmlFor="vehicle">Vehicle (Make, Model, Year)</Label>
-                <Input 
-                  id="vehicle" 
-                  placeholder="e.g. 2018 Honda Accord" 
+                <Input
+                  id="vehicle"
+                  placeholder="e.g. 2018 Honda Accord"
                   className="h-14 rounded-xl px-4"
                   value={formData.vehicle}
-                  onChange={(e) => setFormData({...formData, vehicle: e.target.value})}
-                  required 
+                  onChange={(e) => setFormData({ ...formData, vehicle: e.target.value })}
+                  required
                 />
               </div>
 
               <div className="space-y-2">
                 <Label htmlFor="part">Part Name</Label>
-                <Input 
-                  id="part" 
-                  placeholder="e.g. Left Side Mirror" 
+                <Input
+                  id="part"
+                  placeholder="e.g. Left Side Mirror"
                   className="h-14 rounded-xl px-4"
                   value={formData.part}
-                  onChange={(e) => setFormData({...formData, part: e.target.value})}
-                  required 
+                  onChange={(e) => setFormData({ ...formData, part: e.target.value })}
+                  required
                 />
               </div>
 
@@ -200,11 +200,11 @@ export default function RequestPart() {
                   id="category"
                   className="w-full h-14 rounded-xl px-4 border border-input bg-card font-medium text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                   value={formData.category}
-                  onChange={(e) => setFormData({...formData, category: e.target.value})}
+                  onChange={(e) => setFormData({ ...formData, category: e.target.value })}
                   required
                 >
                   <option value="" disabled>Select category...</option>
-                  {['Engine', 'Brakes', 'Suspension', 'Transmission', 'Electrical', 'Body', 'Filters'].map((cat) => (
+                  {['Engine', 'Brakes', 'Suspension', 'Transmission', 'Electrical', 'Body', 'Filters', 'Accessories', 'Lighting', 'Wheels', 'Tires', 'Battery', 'Cooling System', 'Other'].map((cat) => (
                     <option key={cat} value={cat}>{cat}</option>
                   ))}
                 </select>
@@ -217,12 +217,12 @@ export default function RequestPart() {
 
               <div className="space-y-2">
                 <Label htmlFor="desc">Additional Details (Optional)</Label>
-                <Textarea 
-                  id="desc" 
-                  placeholder="Specific trim, engine size, or color..." 
+                <Textarea
+                  id="desc"
+                  placeholder="Specific trim, engine size, or color..."
                   className="min-h-[120px] rounded-2xl p-4"
                   value={formData.description}
-                  onChange={(e) => setFormData({...formData, description: e.target.value})}
+                  onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                 />
               </div>
             </div>
@@ -235,39 +235,39 @@ export default function RequestPart() {
             </div>
 
             <div className="grid grid-cols-2 gap-4">
-              <button 
+              <button
                 type="button"
                 onClick={() => cameraInputRef.current?.click()}
                 disabled={uploading}
-                className="aspect-square rounded-3xl border-2 border-dashed border-muted-foreground/30 flex flex-col items-center justify-center gap-2 text-muted-foreground hover:bg-muted/50 transition-colors disabled:opacity-50"
+                className="cursor-pointer aspect-square rounded-3xl border-2 border-dashed border-muted-foreground/30 flex flex-col items-center justify-center gap-2 text-muted-foreground hover:bg-muted/50 transition-colors disabled:opacity-50"
               >
                 <Camera size={32} />
                 <span className="text-xs font-bold uppercase tracking-wide">Camera</span>
               </button>
-              <button 
+              <button
                 type="button"
                 onClick={() => fileInputRef.current?.click()}
                 disabled={uploading}
-                className="aspect-square rounded-3xl border-2 border-dashed border-muted-foreground/30 flex flex-col items-center justify-center gap-2 text-muted-foreground hover:bg-muted/50 transition-colors disabled:opacity-50"
+                className="cursor-pointer aspect-square rounded-3xl border-2 border-dashed border-muted-foreground/30 flex flex-col items-center justify-center gap-2 text-muted-foreground hover:bg-muted/50 transition-colors disabled:opacity-50"
               >
                 <Upload size={32} />
                 <span className="text-xs font-bold uppercase tracking-wide">Upload</span>
               </button>
             </div>
 
-            <input 
-              type="file" 
-              accept="image/*" 
-              capture="environment" 
-              ref={cameraInputRef} 
-              className="hidden" 
+            <input
+              type="file"
+              accept="image/*"
+              capture="environment"
+              ref={cameraInputRef}
+              className="hidden"
               onChange={(e) => handleImageFile(e.target.files?.[0])}
             />
-            <input 
-              type="file" 
-              accept="image/*" 
-              ref={fileInputRef} 
-              className="hidden" 
+            <input
+              type="file"
+              accept="image/*"
+              ref={fileInputRef}
+              className="hidden"
               onChange={(e) => handleImageFile(e.target.files?.[0])}
             />
 
@@ -279,15 +279,15 @@ export default function RequestPart() {
 
             {formData.image && (
               <div className="relative aspect-video rounded-[24px] overflow-hidden border border-border shadow-md mt-4">
-                <img 
-                  src={formData.image} 
-                  alt="Uploaded part preview" 
-                  className="w-full h-full object-cover" 
+                <img
+                  src={formData.image}
+                  alt="Uploaded part preview"
+                  className="w-full h-full object-cover"
                 />
                 <button
                   type="button"
                   onClick={() => setFormData(prev => ({ ...prev, image: null }))}
-                  className="absolute top-3 right-3 bg-destructive text-destructive-foreground p-2 rounded-full shadow-lg transition-colors cursor-pointer"
+                  className="cursor-pointer absolute top-3 right-3 bg-destructive text-destructive-foreground p-2 rounded-full shadow-lg transition-colors cursor-pointer"
                 >
                   <Trash2 size={16} />
                 </button>
@@ -304,7 +304,7 @@ export default function RequestPart() {
         )}
 
         <div className="py-6">
-          <Button size="xl" className="w-full font-bold" onClick={handleNext} disabled={loading || uploading}>
+          <Button size="xl" className="cursor-pointer w-full font-bold" onClick={handleNext} disabled={loading || uploading}>
             {loading ? 'Submitting...' : step === 1 ? 'Next Step' : 'Submit Request'}
           </Button>
         </div>
