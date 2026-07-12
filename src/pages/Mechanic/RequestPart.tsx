@@ -183,7 +183,7 @@ export default function RequestPart() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="part">Part Name</Label>
+                <Label htmlFor="part">Spare Part Name</Label>
                 <Input
                   id="part"
                   placeholder="e.g. Left Side Mirror"
@@ -281,7 +281,7 @@ export default function RequestPart() {
               <div className="relative aspect-video rounded-[24px] overflow-hidden border border-border shadow-md mt-4">
                 <img
                   src={formData.image}
-                  alt="Uploaded part preview"
+                  alt="Uploaded spare part preview"
                   className="w-full h-full object-cover"
                 />
                 <button

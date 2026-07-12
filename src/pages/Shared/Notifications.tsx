@@ -67,7 +67,7 @@ export default function Notifications() {
         newNotifications.push({
           id: `seller-order-${order.id}`,
           title: `New Order Received`,
-          message: `Order #${order.id.slice(0, 8)} has been placed for your parts`,
+          message: `Order #${order.id.slice(0, 8)} has been placed for your spare parts`,
           time: order.date,
           type: 'order',
           referenceId: order.id,
@@ -110,7 +110,7 @@ export default function Notifications() {
         const timeVal = new Date(request.date).getTime();
         newNotifications.push({
           id: `seller-request-${request.id}`,
-          title: `New Part Request`,
+          title: `New Spare Part Request`,
           message: `Sourcing ${request.part} for ${request.vehicle}`,
           time: request.date,
           type: 'seller-request',

@@ -6,18 +6,18 @@ import { ChevronRight } from 'lucide-react';
 
 const slides = [
   {
-    title: "Find any part in seconds",
+    title: "Find any spare part in seconds",
     description: "Search thousands of genuine spare parts from verified sellers in Abuja.",
     image: "https://storage.googleapis.com/dala-prod-public-storage/generated-images/f7177dcb-d482-413c-a72a-aaa68b86c5a9/spare-parts-category-6165aa93-1783313459392.webp"
   },
   {
-    title: "Can't find a part?",
+    title: "Can't find a spare part?",
     description: "Our unique 'Request a Part' feature lets you ask all sellers at once.",
     image: "https://storage.googleapis.com/dala-prod-public-storage/generated-images/f7177dcb-d482-413c-a72a-aaa68b86c5a9/onboarding-1-d84e36c2-1783313457705.webp"
   },
   {
     title: "Fast & Trackable Delivery",
-    description: "Get your parts delivered to your workshop. Track every step of the way.",
+    description: "Get your spare parts delivered to your workshop. Track every step of the way.",
     image: "https://storage.googleapis.com/dala-prod-public-storage/generated-images/f7177dcb-d482-413c-a72a-aaa68b86c5a9/delivery-truck-b008bbb6-1783313458260.webp"
   }
 ];

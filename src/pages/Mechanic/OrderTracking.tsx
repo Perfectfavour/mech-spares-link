@@ -18,10 +18,10 @@ export default function OrderTracking() {
   // Define steps and dynamically compute their statuses
   const rawSteps = [
     { label: 'Order Confirmed', icon: FileText, desc: 'Your order has been received' },
-    { label: 'Preparing', icon: Package, desc: 'Seller is packaging your parts' },
+    { label: 'Preparing', icon: Package, desc: 'Seller is packaging your spare parts' },
     { label: 'Dispatched', icon: Truck, desc: 'Package picked up by courier' },
     { label: 'Out for Delivery', icon: MapPinned, desc: 'Rider is arriving at your workshop' },
-    { label: 'Delivered', icon: CheckCircle2, desc: 'Parts received and checked' },
+    { label: 'Delivered', icon: CheckCircle2, desc: 'Spare parts received and checked' },
   ];
 
   const statusOrder = ['Confirmed', 'Preparing', 'Dispatched', 'Out for Delivery', 'Delivered'];

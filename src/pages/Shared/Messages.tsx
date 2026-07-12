@@ -15,7 +15,7 @@ export default function Messages() {
   const [query, setQuery] = useState('');
   const [draft, setDraft] = useState('');
   const [recipientNames, setRecipientNames] = useState<Record<string, string>>({
-    'seller-seed': 'Abuja Auto Parts',
+    'seller-seed': 'Abuja Auto Spare Parts',
     'mech-seed': 'Precision Motors',
   });
 

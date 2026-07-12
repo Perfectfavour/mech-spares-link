@@ -184,7 +184,7 @@ export default function NotificationSettings() {
                     </div>
                     <div>
                       <h4 className="font-bold text-sm text-foreground">New Bids & Offers</h4>
-                      <p className="text-[10px] text-muted-foreground">When sellers quote for your requested parts.</p>
+                      <p className="text-[10px] text-muted-foreground">When sellers quote for your requested spare parts.</p>
                     </div>
                   </div>
                   <button
@@ -209,8 +209,8 @@ export default function NotificationSettings() {
                       <Bell size={18} />
                     </div>
                     <div>
-                      <h4 className="font-bold text-sm text-foreground">New Part Requests</h4>
-                      <p className="text-[10px] text-muted-foreground">When mechanics request parts matching your inventory.</p>
+                      <h4 className="font-bold text-sm text-foreground">New Spare Part Requests</h4>
+                      <p className="text-[10px] text-muted-foreground">When mechanics request spare parts matching your inventory.</p>
                     </div>
                   </div>
                   <button

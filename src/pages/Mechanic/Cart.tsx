@@ -29,7 +29,7 @@ export default function Cart() {
           </div>
           <div className="space-y-2">
             <h2 className="text-2xl font-bold">Your cart is empty</h2>
-            <p className="text-muted-foreground text-sm">Looks like you haven't added any parts yet.</p>
+            <p className="text-muted-foreground text-sm">Looks like you haven't added any spare parts yet.</p>
           </div>
           <Button size="xl" onClick={() => navigate('/')} className="w-full">
             Start Shopping

@@ -80,7 +80,7 @@ export default function SellerDashboard() {
           <div>
             <h2 className="text-xl font-bold tracking-tight text-foreground">Hello, {profile?.full_name || 'Seller'}</h2>
             <p className="text-muted-foreground text-xs font-medium mt-0.5">
-              {profile?.store_name || 'Abuja Auto Parts'} • {profile?.location || 'Gudu Market'}
+              {profile?.store_name || 'Abuja Auto Spare Parts'} • {profile?.location || 'Gudu Market'}
             </p>
           </div>
           <button
@@ -155,7 +155,7 @@ export default function SellerDashboard() {
               <MessageCircle size={24} />
             </div>
             <div className="flex-1 min-w-0">
-              <h4 className="font-bold text-amber-900 text-xs tracking-tight">New Part Request</h4>
+              <h4 className="font-bold text-amber-900 text-xs tracking-tight">New Spare Part Request</h4>
               <p className="text-[11px] text-amber-700 mt-0.5 truncate">
                 Looking for a {pendingRequests[0].part} ({pendingRequests[0].vehicle}).
               </p>

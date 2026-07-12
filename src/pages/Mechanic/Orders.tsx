@@ -31,7 +31,7 @@ export default function MechanicOrders() {
               tab === 'requests' ? 'bg-card shadow-sm text-primary' : 'text-muted-foreground'
             }`}
           >
-            Part Requests
+            Spare Part Requests
           </button>
         </div>
       </div>

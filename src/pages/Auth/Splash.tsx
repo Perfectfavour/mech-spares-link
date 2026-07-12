@@ -26,7 +26,7 @@ export default function Splash() {
           <Wrench size={48} />
         </div>
         <h1 className="text-4xl font-bold tracking-tight">FixLink</h1>
-        <p className="text-primary-foreground/80 font-medium">Genuine Parts, Faster.</p>
+        <p className="text-primary-foreground/80 font-medium">Genuine Spare Parts, Faster.</p>
       </motion.div>
     </MobileContainer>
   );

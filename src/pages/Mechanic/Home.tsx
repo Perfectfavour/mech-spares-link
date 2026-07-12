@@ -55,7 +55,7 @@ export default function MechanicHome() {
         <div className="relative" onClick={() => navigate('/search')}>
           <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground" size={20} />
           <Input
-            placeholder="Search for parts (e.g. Camry Brake Pads)"
+            placeholder="Search for spare parts (e.g. Camry Brake Pads)"
             className="h-14 rounded-2xl pl-12 bg-card border-none shadow-sm cursor-pointer"
             readOnly
           />

@@ -281,7 +281,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
               full_name: currentUser.user_metadata?.full_name || currentUser.email?.split('@')[0] || 'User',
               role: currentUser.user_metadata?.role || 'mechanic',
               workshop_name: currentUser.user_metadata?.role === 'mechanic' ? 'Precision Motors' : null,
-              store_name: currentUser.user_metadata?.role === 'seller' ? 'Abuja Parts Hub' : null,
+              store_name: currentUser.user_metadata?.role === 'seller' ? 'Abuja Spare Parts Hub' : null,
               location: 'Abuja, Nigeria',
             };
             
@@ -1043,7 +1043,7 @@ const addOrder = async (order: any): Promise<string> => {
         full_name: 'John Doe',
         role: selectedRole || role,
         workshop_name: 'Precision Motors',
-        store_name: selectedRole === 'seller' ? 'Abuja Parts Hub' : null,
+        store_name: selectedRole === 'seller' ? 'Abuja Spare Parts Hub' : null,
         location: 'Garki, Abuja',
       };
       setUser(mockUser);

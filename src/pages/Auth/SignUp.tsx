@@ -109,7 +109,7 @@ export default function SignUp() {
             )}
             <Input 
               id="workshop" 
-              placeholder={role === 'mechanic' ? "Precision Motors" : "Abuja Parts Hub"} 
+              placeholder={role === 'mechanic' ? "Precision Motors" : "Abuja Spare Parts Hub"} 
               className="h-12 rounded-xl pl-12" 
               value={businessName}
               onChange={(e) => setBusinessName(e.target.value)}

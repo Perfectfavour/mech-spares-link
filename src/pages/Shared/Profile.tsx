@@ -273,7 +273,7 @@ export default function Profile() {
           <div className="text-center space-y-1">
             <h2 className="text-xl font-bold">
               {role === 'seller'
-                ? (profile?.store_name || 'Abuja Parts Hub')
+                ? (profile?.store_name || 'Abuja Spare Parts Hub')
                 : (profile?.full_name || 'John Doe')}
             </h2>
             <p className="text-xs text-muted-foreground font-semibold">
