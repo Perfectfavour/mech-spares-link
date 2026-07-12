@@ -55,14 +55,64 @@ export default function Profile() {
     if (!file) return;
 
     try {
-      const fileExt = file.name.split('.').pop();
-      const fileName = `${user?.id}-${type}-${Math.random().toString(36).substr(2, 9)}.${fileExt}`;
+      toast.loading(`Uploading ${type} image...`, { id: 'upload-toast' });
+
+      // Client-side compression using HTML Canvas
+      const compressedBlob = await new Promise<Blob>((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = (event) => {
+          const img = new window.Image();
+          img.onload = () => {
+            const canvas = document.createElement('canvas');
+            const max_size = type === 'profile' ? 300 : 800; // Profile image is smaller
+            let width = img.width;
+            let height = img.height;
+
+            if (width > height) {
+              if (width > max_size) {
+                height *= max_size / width;
+                width = max_size;
+              }
+            } else {
+              if (height > max_size) {
+                width *= max_size / height;
+                height = max_size;
+              }
+            }
+
+            canvas.width = width;
+            canvas.height = height;
+            const ctx = canvas.getContext('2d');
+            ctx?.drawImage(img, 0, 0, width, height);
+
+            canvas.toBlob(
+              (blob) => {
+                if (blob) {
+                  resolve(blob);
+                } else {
+                  reject(new Error('Canvas conversion failed'));
+                }
+              },
+              'image/jpeg',
+              0.75 // 75% quality compression
+            );
+          };
+          img.onerror = () => reject(new Error('Image failed to load'));
+          img.src = event.target?.result as string;
+        };
+        reader.onerror = () => reject(new Error('File reader failed'));
+        reader.readAsDataURL(file);
+      });
+
+      const fileName = `${user?.id}-${type}-${Math.random().toString(36).substring(2, 11)}.jpg`;
       const filePath = `${type}_images/${fileName}`;
 
       // Upload to Supabase Storage
       const { error: uploadError } = await supabase.storage
         .from('profile_images')
-        .upload(filePath, file);
+        .upload(filePath, compressedBlob, {
+          contentType: 'image/jpeg'
+        });
 
       if (uploadError) throw uploadError;
 
@@ -70,6 +120,8 @@ export default function Profile() {
       const { data: { publicUrl } } = supabase.storage
         .from('profile_images')
         .getPublicUrl(filePath);
+
+      toast.dismiss('upload-toast');
 
       // Update state and profile
       if (type === 'profile') {
@@ -81,7 +133,8 @@ export default function Profile() {
       }
 
       toast.success(`${type.charAt(0).toUpperCase() + type.slice(1)} image updated!`);
-    } catch (error) {
+    } catch (error: any) {
+      toast.dismiss('upload-toast');
       toast.error(`Failed to upload ${type} image: ${error.message}`);
     }
   };
@@ -214,16 +267,25 @@ export default function Profile() {
               className="hidden"
             />
           </div>
-          <div>
-            <h2 className="text-xl font-bold">{profile?.full_name || 'John Doe'}</h2>
-            <p className="text-sm text-muted-foreground">{user?.email || 'john.doe@workshop.com'}</p>
+          <div className="text-center space-y-1">
+            <h2 className="text-xl font-bold">
+              {role === 'seller'
+                ? (profile?.store_name || 'Abuja Parts Hub')
+                : (profile?.full_name || 'John Doe')}
+            </h2>
+            <p className="text-xs text-muted-foreground font-semibold">
+              {role === 'seller'
+                ? `Owner: ${profile?.full_name || 'Seller'}`
+                : (profile?.workshop_name || 'Precision Motors')}
+            </p>
+            <p className="text-sm text-muted-foreground/80">{user?.email || 'john.doe@workshop.com'}</p>
             {profile?.location && privacySettings.showLocation && (
               <p className="text-xs text-muted-foreground flex items-center justify-center gap-1 mt-1">
-                <MapPin size={12} /> {profile.location}
+                <MapPin size={12} className="text-primary shrink-0" /> {profile.location}
               </p>
             )}
           </div>
-          <span className="bg-primary/10 text-primary text-[10px] font-black px-4 py-1.5 rounded-full uppercase tracking-widest">
+          <span className="bg-primary/10 text-primary text-[10px] font-black px-4 py-1.5 rounded-full uppercase tracking-widest mt-2">
             {role === 'mechanic' ? 'Certified Mechanic' : 'Verified Seller'}
           </span>
         </div>

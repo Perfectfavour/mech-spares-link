@@ -27,6 +27,7 @@ interface AppState {
   addOffer: (offer: any) => Promise<void>;
   messages: any[];
   sendMessage: (receiverId: string, content: string) => Promise<void>;
+  deleteChat: (peerId: string) => Promise<void>;
   isSupabaseActive: boolean;
   signUpUser: (email: string, pass: string, fullName: string, role: Role, businessName: string) => Promise<void>;
   signInUser: (email: string, pass: string, selectedRole?: Role) => Promise<boolean>;
@@ -63,6 +64,7 @@ const fallbackAppState: AppState = {
   addOffer: async () => undefined,
   messages: [],
   sendMessage: async () => undefined,
+  deleteChat: async () => undefined,
   isSupabaseActive: false,
   signUpUser: async () => undefined,
   signInUser: async () => false,
@@ -867,6 +869,33 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
+  const deleteChat = async (peerId: string) => {
+    const updatedMessages = messages.filter(
+      (m) =>
+        !(
+          (m.sender_id === user?.id && m.receiver_id === peerId) ||
+          (m.sender_id === peerId && m.receiver_id === user?.id)
+        )
+    );
+    setMessages(updatedMessages);
+    localStorage.setItem(STORAGE_PREFIX + 'messages', JSON.stringify(updatedMessages));
+
+    if (isSupabaseActive && user) {
+      try {
+        const { error } = await supabase
+          .from('messages')
+          .delete()
+          .or(`and(sender_id.eq.${user.id},receiver_id.eq.${peerId}),and(sender_id.eq.${peerId},receiver_id.eq.${user.id})`);
+        
+        if (error) {
+          console.warn("Supabase chat delete returned error, falling back to state filter:", error);
+        }
+      } catch (e) {
+        console.warn("Unexpected Supabase delete chat error:", e);
+      }
+    }
+  };
+
   const saveLocalMessage = (m: any) => {
     const updated = [...messages, m];
     setMessages(updated);
@@ -1120,6 +1149,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         addOffer,
         messages,
         sendMessage,
+        deleteChat,
         isSupabaseActive,
         signUpUser,
         signInUser,

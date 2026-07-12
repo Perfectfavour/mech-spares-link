@@ -1,5 +1,5 @@
-import React from 'react';
-import { Search, MapPin, Bell, ChevronRight, Star, PlusCircle, Wrench, CircleDot, Sliders, Settings2, Zap, Car, Filter } from 'lucide-react';
+import React, { useState } from 'react';
+import { Search, MapPin, Bell, ChevronRight, Star, PlusCircle, Wrench, CircleDot, Sliders, Settings2, Zap, Car, Filter, Sparkles, Lightbulb, Circle, Disc, Battery, Fan, CircleDashed } from 'lucide-react';
 import MobileContainer from '@/components/layout/MobileContainer';
 import BottomNav from '@/components/layout/BottomNav';
 import { Input } from '@/components/ui/input';
@@ -16,14 +16,23 @@ const categories = [
   { id: 5, name: 'Electrical', icon: Zap },
   { id: 6, name: 'Body', icon: Car },
   { id: 7, name: 'Filters', icon: Filter },
+  { id: 8, name: 'Accessories', icon: Sparkles },
+  { id: 9, name: 'Lighting', icon: Lightbulb },
+  { id: 10, name: 'Wheels', icon: Circle },
+  { id: 11, name: 'Tires', icon: Disc },
+  { id: 12, name: 'Battery', icon: Battery },
+  { id: 13, name: 'Cooling System', icon: Fan },
+  { id: 14, name: 'Other', icon: CircleDashed }
 ];
 
 export default function MechanicHome() {
   const navigate = useNavigate();
   const { products, profile } = useApp();
+  const [showAllCategories, setShowAllCategories] = useState(false);
 
   const trendingParts = products.slice(0, 3);
   const userName = profile?.full_name?.split(' ')[0] || 'John';
+  const displayedCategories = showAllCategories ? categories : categories.slice(0, 6);
 
   return (
     <MobileContainer hasBottomNav>
@@ -77,10 +86,15 @@ export default function MechanicHome() {
         <div className="space-y-4">
           <div className="flex justify-between items-center px-1">
             <h3 className="text-xl font-bold">Categories</h3>
-            <button className="text-primary font-bold text-sm">See All</button>
+            <button
+              onClick={() => setShowAllCategories(!showAllCategories)}
+              className="text-primary font-bold text-sm hover:underline cursor-pointer"
+            >
+              {showAllCategories ? 'Show Less' : 'See All'}
+            </button>
           </div>
           <div className="grid grid-cols-3 gap-4">
-            {categories.map((cat) => {
+            {displayedCategories.map((cat) => {
               const Icon = cat.icon;
               return (
                 <div
@@ -102,7 +116,7 @@ export default function MechanicHome() {
         <div className="space-y-4 pb-4">
           <div className="flex justify-between items-center px-1">
             <h3 className="text-xl font-bold">Trending Near You</h3>
-            <button className="text-primary font-bold text-sm" onClick={() => navigate('/search')}>View All</button>
+            <button className="text-primary font-bold text-sm cursor-pointer" onClick={() => navigate('/search')}>View All</button>
           </div>
           <div className="space-y-4">
             {trendingParts.map((part) => (

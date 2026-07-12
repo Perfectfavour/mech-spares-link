@@ -24,7 +24,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 
-const categories = ['Brakes', 'Engine','Transmission', 'Suspension', 'Electrical', 'Body', 'Filters'];
+const categories = ['Engine', 'Brakes', 'Suspension', 'Transmission', 'Electrical', 'Body', 'Filters', 'Accessories', 'Lighting', 'Wheels', 'Tires', 'Battery', 'Cooling System', 'Other'];
 
 export default function Inventory() {
   const navigate = useNavigate();
@@ -197,25 +197,25 @@ export default function Inventory() {
           />
         </div>
 
-       {/* Category Tabs - Clean Grid Structure Layout */}
-<div className="w-full">
-  <div className="grid grid-cols-4 gap-2">
-    {['All', ...categories].map((cat) => (
-      <button 
-        key={cat}
-        className={`px-2 py-3 rounded-2xl font-bold text-xs text-center transition-all cursor-pointer select-none truncate ${
-          activeCategory === cat
-            ? 'bg-primary text-white shadow-lg shadow-primary/20'
-            : 'bg-card border border-border text-muted-foreground hover:bg-muted'
-        }`}
-        onClick={() => setActiveCategory(cat)}
-        title={cat}
-      >
-        {cat}
-      </button>
-    ))}
-  </div>
-</div>
+        {/* Category Tabs - Horizontally Scrollable Layout */}
+        <div className="w-full overflow-x-auto no-scrollbar py-1">
+          <div className="flex gap-2 w-max px-1">
+            {['All', ...categories].map((cat) => (
+              <button 
+                key={cat}
+                className={`px-4 py-2.5 rounded-full font-bold text-xs text-center transition-all cursor-pointer select-none whitespace-nowrap ${
+                  activeCategory === cat
+                    ? 'bg-primary text-white shadow-lg shadow-primary/25 scale-102'
+                    : 'bg-card border border-border text-muted-foreground hover:bg-muted'
+                }`}
+                onClick={() => setActiveCategory(cat)}
+                title={cat}
+              >
+                {cat}
+              </button>
+            ))}
+          </div>
+        </div>
         {/* Inventory List */}
         <div className="space-y-4 pb-20">
           {filteredProducts.length === 0 ? (

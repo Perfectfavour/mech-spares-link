@@ -29,11 +29,55 @@ export default function RequestPart() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const cameraInputRef = useRef<HTMLInputElement>(null);
 
-  const convertToBase64 = (file: File): Promise<string> => {
+  const compressImage = (file: File, max_size = 800): Promise<Blob> => {
     return new Promise((resolve, reject) => {
       const reader = new FileReader();
+      reader.onload = (event) => {
+        const img = new window.Image();
+        img.onload = () => {
+          const canvas = document.createElement('canvas');
+          let width = img.width;
+          let height = img.height;
+
+          if (width > height) {
+            if (width > max_size) {
+              height *= max_size / width;
+              width = max_size;
+            }
+          } else {
+            if (height > max_size) {
+              width *= max_size / height;
+              height = max_size;
+            }
+          }
+
+          canvas.width = width;
+          canvas.height = height;
+          const ctx = canvas.getContext('2d');
+          ctx?.drawImage(img, 0, 0, width, height);
+
+          canvas.toBlob(
+            (blob) => {
+              if (blob) resolve(blob);
+              else reject(new Error('Canvas conversion failed'));
+            },
+            'image/jpeg',
+            0.75
+          );
+        };
+        img.onerror = () => reject(new Error('Image failed to load'));
+        img.src = event.target?.result as string;
+      };
+      reader.onerror = () => reject(new Error('FileReader failed'));
       reader.readAsDataURL(file);
-      reader.onload = () => resolve(reader.result as string);
+    });
+  };
+
+  const convertBlobToBase64 = (blob: Blob): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.readAsDataURL(blob);
+      reader.onloadend = () => resolve(reader.result as string);
       reader.onerror = (error) => reject(error);
     });
   };
@@ -42,19 +86,21 @@ export default function RequestPart() {
     if (!file) return;
     setUploading(true);
     try {
+      const compressedBlob = await compressImage(file, 800);
       let uploadedUrl = '';
       if (isSupabaseActive && user) {
-        const fileExt = file.name.split('.').pop() || 'jpg';
-        const fileName = `request-${user.id}-${Date.now()}.${fileExt}`;
+        const fileName = `request-${user.id}-${Date.now()}.jpg`;
         const filePath = `requests/${fileName}`;
         
         const { error: uploadError } = await supabase.storage
           .from('profile_images')
-          .upload(filePath, file);
+          .upload(filePath, compressedBlob, {
+            contentType: 'image/jpeg'
+          });
           
         if (uploadError) {
           console.warn("Storage upload failed, trying base64 fallback:", uploadError);
-          uploadedUrl = await convertToBase64(file);
+          uploadedUrl = await convertBlobToBase64(compressedBlob);
         } else {
           const { data: { publicUrl } } = supabase.storage
             .from('profile_images')
@@ -62,7 +108,7 @@ export default function RequestPart() {
           uploadedUrl = publicUrl;
         }
       } else {
-        uploadedUrl = await convertToBase64(file);
+        uploadedUrl = await convertBlobToBase64(compressedBlob);
       }
       setFormData(prev => ({ ...prev, image: uploadedUrl }));
       toast.success('Photo added!');

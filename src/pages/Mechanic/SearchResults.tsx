@@ -71,12 +71,17 @@ export default function SearchResults() {
           </button>
         </div>
         
-        <div className="w-full pb-1">
-          <div className="grid grid-cols-4 gap-2">
+        {/* Category Tabs - Horizontally Scrollable Slider */}
+        <div className="w-full overflow-x-auto no-scrollbar py-1">
+          <div className="flex gap-2 w-max px-1">
             {categories.map((category) => (
               <button
                 key={category}
-                className={`px-4 py-2 rounded-xl text-sm font-bold whitespace-nowrap border ${selectedCategory === category ? 'bg-primary text-white border-primary' : 'bg-muted text-foreground border-border'}`}
+                className={`px-4 py-2.5 rounded-full text-xs font-bold whitespace-nowrap border transition-all cursor-pointer select-none ${
+                  selectedCategory === category 
+                    ? 'bg-primary text-white border-primary shadow-md shadow-primary/20 scale-102' 
+                    : 'bg-muted text-foreground border-border hover:bg-muted/80'
+                }`}
                 onClick={() => setSelectedCategory(category)}
               >
                 {category}
@@ -84,11 +89,41 @@ export default function SearchResults() {
             ))}
           </div>
         </div>
-        <div className="flex gap-2 overflow-x-auto no-scrollbar pb-1">
-          <button className={`px-4 py-2 rounded-xl text-sm font-bold whitespace-nowrap border ${condition === 'Any' ? 'bg-primary text-white border-primary' : 'bg-muted text-foreground border-border'}`} onClick={() => setCondition('Any')}>Condition: Any</button>
-          <button className={`px-4 py-2 rounded-xl text-sm font-bold whitespace-nowrap border ${condition === 'New' ? 'bg-primary text-white border-primary' : 'bg-muted text-foreground border-border'}`} onClick={() => setCondition('New')}>Condition: New</button>
-          <button className={`px-4 py-2 rounded-xl text-sm font-bold whitespace-nowrap border ${condition === 'Used' ? 'bg-primary text-white border-primary' : 'bg-muted text-foreground border-border'}`} onClick={() => setCondition('Used')}>Condition: Used</button>
-          <button className={`px-4 py-2 rounded-xl text-sm font-bold whitespace-nowrap border ${sortOrder === 'price-asc' ? 'bg-primary text-white border-primary' : 'bg-muted text-foreground border-border'}`} onClick={() => setSortOrder(sortOrder === 'price-asc' ? 'recommended' : 'price-asc')}>Price: Low to High</button>
+
+        {/* Other Filters Row */}
+        <div className="flex gap-2 overflow-x-auto no-scrollbar py-1">
+          <button 
+            className={`px-4 py-2.5 rounded-full text-xs font-bold whitespace-nowrap border transition-all cursor-pointer ${
+              condition === 'Any' ? 'bg-primary text-white border-primary shadow-md shadow-primary/10' : 'bg-muted text-foreground border-border'
+            }`} 
+            onClick={() => setCondition('Any')}
+          >
+            Condition: Any
+          </button>
+          <button 
+            className={`px-4 py-2.5 rounded-full text-xs font-bold whitespace-nowrap border transition-all cursor-pointer ${
+              condition === 'New' ? 'bg-primary text-white border-primary shadow-md shadow-primary/10' : 'bg-muted text-foreground border-border'
+            }`} 
+            onClick={() => setCondition('New')}
+          >
+            Condition: New
+          </button>
+          <button 
+            className={`px-4 py-2.5 rounded-full text-xs font-bold whitespace-nowrap border transition-all cursor-pointer ${
+              condition === 'Used' ? 'bg-primary text-white border-primary shadow-md shadow-primary/10' : 'bg-muted text-foreground border-border'
+            }`} 
+            onClick={() => setCondition('Used')}
+          >
+            Condition: Used
+          </button>
+          <button 
+            className={`px-4 py-2.5 rounded-full text-xs font-bold whitespace-nowrap border transition-all cursor-pointer ${
+              sortOrder === 'price-asc' ? 'bg-primary text-white border-primary shadow-md shadow-primary/10' : 'bg-muted text-foreground border-border'
+            }`} 
+            onClick={() => setSortOrder(sortOrder === 'price-asc' ? 'recommended' : 'price-asc')}
+          >
+            Price: Low to High
+          </button>
         </div>
       </div>
 

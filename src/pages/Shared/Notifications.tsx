@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, BellRing, ChevronRight, Trash2, Check } from 'lucide-react';
+import { ArrowLeft, Trash2, Check, Bell, Package, Wrench, MessageSquare, Percent } from 'lucide-react';
 import MobileContainer from '@/components/layout/MobileContainer';
 import BottomNav from '@/components/layout/BottomNav';
 import { Card } from '@/components/ui/card';
@@ -11,7 +11,7 @@ import { toast } from 'sonner';
 
 export default function Notifications() {
   const navigate = useNavigate();
-  const { user, messages, orders, requests, offers, updateProfile, products } = useApp();
+  const { user, messages, orders, requests, offers, updateProfile, products, role, profile } = useApp();
   const [query, setQuery] = useState('');
   const [notifications, setNotifications] = useState<any[]>([]);
   const [deletedIds, setDeletedIds] = useState<Set<string>>(new Set());
@@ -21,111 +21,122 @@ export default function Notifications() {
     const newNotifications = [];
 
     if (!user) return newNotifications;
-    // Order-related notifications
+
+    const lastReadTime = profile?.last_read_notifications ? new Date(profile.last_read_notifications).getTime() : 0;
+
+    // Order-related notifications (for mechanics)
+    if (role === 'mechanic') {
       const buyerOrders = orders.filter(o => o.buyer_id === user.id);
       buyerOrders.forEach(order => {
-      if (deletedIds.has(`order-${order.id}`)) return;
-      newNotifications.push({
+        if (deletedIds.has(`order-${order.id}`)) return;
+        const timeVal = new Date(order.date).getTime();
+        newNotifications.push({
           id: `order-${order.id}`,
-          title: `Order #${order.id} Update`,
-          message: `Your order for ${order.items.length} items is now ${order.status}`,
+          title: `Order Update`,
+          message: `Your order #${order.id.slice(0, 8)} is now ${order.status}`,
           time: order.date,
           type: 'order',
           referenceId: order.id,
-          read: false
-        });
-      });
-
-      const sellerOrders = orders.filter(o => o.items.some((item: any) => item.seller_id === user.id));
-      sellerOrders.forEach(order => {
-      if (deletedIds.has(`seller-order-${order.id}`)) return;
-      newNotifications.push({
-          id: `seller-order-${order.id}`,
-          title: `New Order #${order.id}`,
-          message: `You have a new order for ${order.items.filter((i: any) => i.seller_id === user.id).length} items`,
-          time: order.date,
-          type: 'order',
-          referenceId: order.id,
-          read: false
+          read: timeVal <= lastReadTime
         });
       });
 
       // Request-related notifications (for mechanics)
-      if (user.role === 'mechanic') {
-        const mechanicRequests = requests.filter(r => r.mechanic_id === user.id);
-        mechanicRequests.forEach(request => {
+      const mechanicRequests = requests.filter(r => r.mechanic_id === user.id);
+      mechanicRequests.forEach(request => {
         if (deletedIds.has(`request-${request.id}`)) return;
+        const timeVal = new Date(request.date).getTime();
         newNotifications.push({
-            id: `request-${request.id}`,
-            title: `Request Update: ${request.part}`,
-            message: `Your request for ${request.part} has ${request.responses.length} offers`,
-            time: request.date,
-            type: 'request',
-            referenceId: request.id,
-            read: request.responses.length > 0
-          });
+          id: `request-${request.id}`,
+          title: `Request Update: ${request.part}`,
+          message: `Your request for ${request.part} has received ${request.responses?.length || 0} offers`,
+          time: request.date,
+          type: 'request',
+          referenceId: request.id,
+          read: (request.responses?.length === 0) || timeVal <= lastReadTime
         });
-      }
+      });
+    }
+
+    // Seller-related notifications
+    if (role === 'seller') {
+      const sellerOrders = orders.filter(o => o.items.some((item: any) => item.seller_id === user.id));
+      sellerOrders.forEach(order => {
+        if (deletedIds.has(`seller-order-${order.id}`)) return;
+        const timeVal = new Date(order.date).getTime();
+        newNotifications.push({
+          id: `seller-order-${order.id}`,
+          title: `New Order Received`,
+          message: `Order #${order.id.slice(0, 8)} has been placed for your parts`,
+          time: order.date,
+          type: 'order',
+          referenceId: order.id,
+          read: timeVal <= lastReadTime
+        });
+      });
 
       // Offer-related notifications (for sellers)
-      if (user.role === 'seller') {
-        const sellerOffers = offers.filter(o => o.seller_id === user.id);
-        sellerOffers.forEach(offer => {
+      const sellerOffers = offers.filter(o => o.seller_id === user.id);
+      sellerOffers.forEach(offer => {
         if (deletedIds.has(`offer-${offer.id}`)) return;
+        const timeVal = offer.date ? new Date(offer.date).getTime() : Date.now();
         newNotifications.push({
-            id: `offer-${offer.id}`,
-            title: `Offer Update: ${offer.part}`,
-            message: `Your offer for ${offer.part} was ${offer.status}`,
-            time: offer.date || new Date().toISOString().split('T')[0],
-            type: 'offer',
-            referenceId: offer.id,
-            read: false
-          });
+          id: `offer-${offer.id}`,
+          title: `Offer Update: ${offer.part || 'Part'}`,
+          message: `Your offer was ${offer.status}`,
+          time: offer.date || new Date().toISOString().split('T')[0],
+          type: 'offer',
+          referenceId: offer.id,
+          read: timeVal <= lastReadTime
         });
+      });
 
-        // Request alerts for matching categories (for sellers)
-        const sellerCategories = Array.from(
-          new Set(products.filter((p) => p.seller_id === user.id).map((p) => p.category))
-        );
-        const sellerRespondedRequestIds = new Set(
-          offers.filter((o) => o.seller_id === user.id).map((o) => o.request_id)
-        );
-        const matchingRequests = requests.filter(
-          (r) =>
-            sellerCategories.includes(r.category) &&
-            r.status === 'pending' &&
-            !sellerRespondedRequestIds.has(r.id)
-        );
+      // Request alerts for matching categories (for sellers)
+      const sellerCategories = Array.from(
+        new Set(products.filter((p) => p.seller_id === user.id).map((p) => p.category))
+      );
+      const sellerRespondedRequestIds = new Set(
+        offers.filter((o) => o.seller_id === user.id).map((o) => o.request_id)
+      );
+      const matchingRequests = requests.filter(
+        (r) =>
+          sellerCategories.includes(r.category) &&
+          r.status === 'pending' &&
+          !sellerRespondedRequestIds.has(r.id)
+      );
 
-        matchingRequests.forEach((request) => {
-          if (deletedIds.has(`seller-request-${request.id}`)) return;
-          newNotifications.push({
-            id: `seller-request-${request.id}`,
-            title: `New Request: ${request.part}`,
-            message: `A mechanic is looking for a ${request.part} for a ${request.vehicle}. Click to chat and quote.`,
-            time: request.date,
-            type: 'seller-request',
-            referenceId: request.id,
-            mechanicId: request.mechanic_id,
-            read: false,
-          });
+      matchingRequests.forEach((request) => {
+        if (deletedIds.has(`seller-request-${request.id}`)) return;
+        const timeVal = new Date(request.date).getTime();
+        newNotifications.push({
+          id: `seller-request-${request.id}`,
+          title: `New Part Request`,
+          message: `Sourcing ${request.part} for ${request.vehicle}`,
+          time: request.date,
+          type: 'seller-request',
+          referenceId: request.id,
+          mechanicId: request.mechanic_id,
+          read: timeVal <= lastReadTime,
+        });
+      });
+    }
+
+    // Message notifications
+    messages.forEach(message => {
+      if (message.receiver_id === user.id && !deletedIds.has(`message-${message.id}`)) {
+        const timeVal = new Date(message.created_at).getTime();
+        newNotifications.push({
+          id: `message-${message.id}`,
+          title: `New Message`,
+          message: `${message.sender?.full_name || 'User'}: "${message.content.substring(0, 45)}${message.content.length > 45 ? '...' : ''}"`,
+          time: message.created_at.split('T')[0],
+          type: 'message',
+          referenceId: message.id,
+          senderId: message.sender_id,
+          read: message.read || timeVal <= lastReadTime
         });
       }
-
-      // Message notifications
-      messages.forEach(message => {
-      if (message.receiver_id === user.id && !deletedIds.has(`message-${message.id}`)) {
-        newNotifications.push({
-            id: `message-${message.id}`,
-            title: `New Message from ${message.sender?.full_name || 'User'}`,
-            message: message.content.substring(0, 50) + (message.content.length > 50 ? '...' : ''),
-            time: message.created_at.split('T')[0],
-            type: 'message',
-            referenceId: message.id,
-          read: message.read || false
-          });
-        }
-      });
+    });
 
     return newNotifications.sort((a, b) =>
       new Date(b.time).getTime() - new Date(a.time).getTime()
@@ -135,7 +146,7 @@ export default function Notifications() {
   // Initialize notifications on mount
   useEffect(() => {
     setNotifications(generateNotifications());
-  }, [user, messages, orders, requests, offers, products]);
+  }, [user, messages, orders, requests, offers, products, profile, role]);
 
   const filteredNotifications = notifications.filter((item) =>
     item.title.toLowerCase().includes(query.toLowerCase()) ||
@@ -143,63 +154,75 @@ export default function Notifications() {
   );
 
   const handleDelete = (id: string) => {
-    // Add to deleted set
     setDeletedIds(prev => new Set(prev).add(id));
-    // Remove from UI
     setNotifications(prev => prev.filter(n => n.id !== id));
     toast.success('Notification dismissed');
   };
 
   const handleMarkAllAsRead = async () => {
     try {
-      // Update profile to mark notifications as read
       await updateProfile({ last_read_notifications: new Date().toISOString() });
-
-      // Update local state
       setNotifications(prev => prev.map(n => ({ ...n, read: true })));
       toast.success('All notifications marked as read');
     } catch (error) {
-      toast.error('Failed to update notification status');
-}
+      toast.error('Failed to update notifications');
+    }
   };
 
   const handleNotificationClick = (notification: any) => {
-    // Mark as read when clicked
     setNotifications(prev => prev.map(n =>
       n.id === notification.id ? { ...n, read: true } : n
     ));
 
     switch (notification.type) {
       case 'order':
-        navigate(`/order/${notification.referenceId}`);
+        navigate(role === 'seller' ? `/order/${notification.referenceId}` : `/order-tracking/${notification.referenceId}`);
         break;
       case 'request':
-        navigate(`/request/${notification.referenceId}`);
+        navigate(`/orders`);
         break;
       case 'seller-request':
         navigate(`/messages?recipientId=${notification.mechanicId}&requestId=${notification.referenceId}`);
         break;
       case 'offer':
-        navigate(`/offer/${notification.referenceId}`);
+        navigate(`/orders`);
         break;
       case 'message':
-        navigate(`/messages`);
+        navigate(`/messages?recipientId=${notification.senderId}`);
         break;
       default:
         break;
     }
   };
 
+  const getNotificationIcon = (type: string, read: boolean) => {
+    const baseClass = `w-10 h-10 rounded-full flex items-center justify-center transition-all duration-200 ${
+      !read ? 'bg-primary/10 text-primary shadow-sm' : 'bg-muted text-muted-foreground'
+    }`;
+    
+    let Icon = Bell;
+    if (type === 'order') Icon = Package;
+    else if (type === 'request' || type === 'seller-request') Icon = Wrench;
+    else if (type === 'message') Icon = MessageSquare;
+    else if (type === 'offer') Icon = Percent;
+
+    return (
+      <div className={baseClass}>
+        <Icon size={18} />
+      </div>
+    );
+  };
+
   return (
     <MobileContainer hasBottomNav>
       <div className="p-6 space-y-6">
         <div className="flex items-center gap-4">
-          <button onClick={() => navigate(-1)} className="text-foreground">
-            <ArrowLeft size={24} />
+          <button onClick={() => navigate(-1)} className="text-foreground hover:bg-muted p-2 rounded-full transition-all">
+            <ArrowLeft size={20} />
           </button>
           <div>
             <h1 className="text-2xl font-bold">Notifications</h1>
-            <p className="text-sm text-muted-foreground">Stay updated on offers, orders, and activity.</p>
+            <p className="text-xs text-muted-foreground">Stay updated on offers, orders, and activity.</p>
           </div>
         </div>
 
@@ -207,63 +230,75 @@ export default function Notifications() {
           <div className="flex-1 relative">
             <Input
               placeholder="Search notifications..."
-              className="h-14 rounded-2xl pl-4 bg-card border-none shadow-sm"
+              className="h-12 rounded-full pl-4 bg-muted border-none text-sm placeholder:text-muted-foreground/60"
               value={query}
               onChange={(e) => setQuery(e.target.value)}
             />
           </div>
-          {notifications.length > 0 && (
+          {notifications.some(n => !n.read) && (
             <Button
               variant="outline"
               size="sm"
-              className="rounded-xl h-12 px-3 text-sm"
+              className="rounded-full h-10 px-4 text-xs font-bold border-2 hover:bg-muted cursor-pointer"
               onClick={handleMarkAllAsRead}
             >
               <Check size={14} className="mr-1" />
-              Mark all
+              Mark all read
             </Button>
           )}
         </div>
 
-        <div className="space-y-3 pb-20">
+        <div className="space-y-4 pb-20">
           {filteredNotifications.length === 0 ? (
-            <div className="text-center py-8 text-muted-foreground">
-              <p>No notifications found</p>
-              {query && <p className="text-sm mt-2">Try adjusting your search</p>}
+            <div className="text-center py-20 text-muted-foreground space-y-2">
+              <Bell className="mx-auto text-muted-foreground/30" size={48} />
+              <p className="font-semibold text-foreground">All caught up!</p>
+              <p className="text-xs">No notifications found at the moment.</p>
             </div>
           ) : (
             filteredNotifications.map((item) => (
-              <Card
+              <div
                 key={item.id}
-                className={`p-4 rounded-[28px] border border-border flex items-start gap-3 cursor-pointer ${
-                  !item.read ? 'bg-primary/5 border-primary/20' : ''
-                }`}
                 onClick={() => handleNotificationClick(item)}
+                className={`group relative p-4 rounded-[24px] border border-border bg-card hover:bg-muted/30 transition-all flex items-start gap-4 cursor-pointer select-none active:scale-[0.99] ${
+                  !item.read ? 'border-primary/15 bg-primary/[0.01]' : ''
+                }`}
               >
-                <div className={`p-3 rounded-2xl ${!item.read ? 'bg-primary/10 text-primary' : 'bg-muted text-muted-foreground'}`}>
-                  <BellRing size={20} />
-                </div>
-                <div className="flex-1" onClick={(e) => e.stopPropagation()}>
-                  <div className="flex justify-between items-start gap-2">
-                    <h2 className="font-bold text-sm">{item.title}</h2>
-                    <span className="text-[10px] text-muted-foreground whitespace-nowrap">{item.time}</span>
+                {/* Unread indicator dot */}
+                {!item.read && (
+                  <span className="absolute top-4 right-4 w-2 h-2 rounded-full bg-primary animate-pulse" />
+                )}
+
+                {/* Circular Icon */}
+                {getNotificationIcon(item.type, item.read)}
+
+                {/* Body Content */}
+                <div className="flex-1 min-w-0 pr-4">
+                  <div className="flex justify-between items-baseline gap-2">
+                    <h4 className={`text-sm font-bold truncate ${!item.read ? 'text-foreground' : 'text-foreground/80'}`}>
+                      {item.title}
+                    </h4>
                   </div>
-                  <p className="text-sm text-muted-foreground mt-1">{item.message}</p>
+                  <p className="text-xs text-muted-foreground mt-1 leading-relaxed">
+                    {item.message}
+                  </p>
+                  <span className="inline-block text-[9px] text-muted-foreground/60 font-semibold tracking-wider uppercase mt-2">
+                    {item.time}
+                  </span>
                 </div>
-                <div className="flex flex-col gap-2">
-                  <ChevronRight size={18} className="text-muted-foreground mt-1" />
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleDelete(item.id);
-                    }}
-                    className="text-destructive/70 hover:text-destructive p-1"
-                    title="Dismiss notification"
-                  >
-                    <Trash2 size={16} />
-                  </button>
-                </div>
-              </Card>
+
+                {/* Dismiss Action */}
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleDelete(item.id);
+                  }}
+                  className="text-muted-foreground/40 hover:text-destructive p-2 rounded-full hover:bg-destructive/10 transition-all self-center cursor-pointer"
+                  title="Dismiss notification"
+                >
+                  <Trash2 size={16} />
+                </button>
+              </div>
             ))
           )}
         </div>

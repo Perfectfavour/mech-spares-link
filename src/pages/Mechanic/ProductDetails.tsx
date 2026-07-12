@@ -57,7 +57,7 @@ export default function ProductDetails() {
       {/* Product Image */}
       <div className="relative h-80">
         <img src={product.image || product.image_url} alt={product.name} className="w-full h-full object-cover" />
-        <button 
+        <button
           onClick={() => navigate(-1)}
           className="absolute top-6 left-6 bg-white/80 backdrop-blur-md p-3 rounded-2xl shadow-lg"
         >
@@ -93,7 +93,7 @@ export default function ProductDetails() {
               </p>
             </div>
           </div>
-          <button className="bg-primary/10 text-primary p-3 rounded-2xl" onClick={handleOpenChat}>
+          <button className="bg-primary/10 text-primary p-3 rounded-2xl cursor-pointer" onClick={handleOpenChat}>
             <MessageSquare size={20} />
           </button>
         </div>
@@ -142,21 +142,21 @@ export default function ProductDetails() {
       {/* Bottom Action Bar */}
       <div className="sticky bottom-0 bg-background/80 backdrop-blur-lg border-t border-border p-6 flex gap-4 items-center pb-24">
         <div className="flex items-center bg-muted rounded-2xl p-1 shrink-0">
-          <button 
+          <button
             onClick={() => setQty(Math.max(1, qty - 1))}
             className="w-12 h-12 flex items-center justify-center text-muted-foreground"
           >
             <Minus size={20} />
           </button>
           <span className="w-8 text-center font-bold">{qty}</span>
-          <button 
+          <button
             onClick={() => setQty(qty + 1)}
             className="w-12 h-12 flex items-center justify-center text-muted-foreground"
           >
             <Plus size={20} />
           </button>
         </div>
-        <Button size="xl" className="flex-1 font-bold gap-3" onClick={handleAddToCart}>
+        <Button size="xl" className="flex-1 font-bold gap-3 cursor-pointer" onClick={handleAddToCart}>
           <ShoppingCart size={20} />
           Add to Cart
         </Button>
