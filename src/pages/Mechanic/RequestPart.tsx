@@ -152,7 +152,7 @@ export default function RequestPart() {
         <button onClick={() => navigate(-1)} className="text-foreground">
           <ArrowLeft size={24} />
         </button>
-        <h1 className="text-xl font-bold">Request a Part</h1>
+        <h1 className="text-xl font-bold">Request a Spare Part</h1>
       </div>
 
       <div className="flex-1 p-6 flex flex-col pb-24">

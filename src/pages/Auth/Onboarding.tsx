@@ -12,7 +12,7 @@ const slides = [
   },
   {
     title: "Can't find a spare part?",
-    description: "Our unique 'Request a Part' feature lets you ask all sellers at once.",
+    description: "Our unique 'Request a Spare Part' feature lets you ask all sellers at once.",
     image: "https://storage.googleapis.com/dala-prod-public-storage/generated-images/f7177dcb-d482-413c-a72a-aaa68b86c5a9/onboarding-1-d84e36c2-1783313457705.webp"
   },
   {

@@ -74,7 +74,7 @@ export default function MechanicHome() {
               onClick={() => navigate('/request-part')}
             >
               <PlusCircle size={18} />
-              Request a Part
+              Request a Spare Part
             </Button>
           </div>
           <div className="absolute -right-4 -bottom-4 opacity-20 group-hover:scale-110 transition-transform">
