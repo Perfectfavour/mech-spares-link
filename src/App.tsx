@@ -19,6 +19,8 @@ import Cart from './pages/Mechanic/Cart';
 import Checkout from './pages/Mechanic/Checkout';
 import MechanicOrders from './pages/Mechanic/Orders';
 import OrderTracking from './pages/Mechanic/OrderTracking';
+
+// Shared Pages
 import Messages from './pages/Shared/Messages';
 import Notifications from './pages/Shared/Notifications';
 import Profile from './pages/Shared/Profile';
@@ -32,6 +34,7 @@ import SellerDashboard from './pages/Seller/Dashboard';
 import Inventory from './pages/Seller/Inventory';
 import SellerOrderDetails from './pages/Seller/OrderDetails';
 import ShopProfile from './pages/Seller/ShopProfile';
+import SellerOrders from './pages/Seller/SellerOrders';
 
 function AppRoutes() {
   const { isLoggedIn, role } = useApp();
@@ -68,6 +71,7 @@ function AppRoutes() {
           <Route path="/inventory" element={<Inventory />} />
           <Route path="/order/:id" element={<SellerOrderDetails />} />
           <Route path="/shop-profile" element={<ShopProfile />} />
+          <Route path="/orders" element={<SellerOrders />} />
         </>
       )}
       <Route path="/messages" element={<Messages />} />

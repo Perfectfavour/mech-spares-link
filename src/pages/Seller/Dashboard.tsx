@@ -1,4 +1,4 @@
-import { ShoppingBag, Package, TrendingUp, Bell, ChevronRight, MessageCircle } from 'lucide-react';
+import { ShoppingBag, Package, TrendingUp, Bell, ChevronRight, MessageCircle, Clock, CheckCircle2 } from 'lucide-react';
 import MobileContainer from '@/components/layout/MobileContainer';
 import BottomNav from '@/components/layout/BottomNav';
 import { Card } from '@/components/ui/card';
@@ -9,34 +9,53 @@ export default function SellerDashboard() {
   const navigate = useNavigate();
   const { orders, requests, offers, profile, user, products } = useApp();
 
+  // Unified Matching Strategy: Check top-level seller_id fallback OR individual items match
   const sellerOrders = orders.filter((order) =>
+    order.seller_id === user?.id || 
     order.items?.some((item: any) => item.seller_id === user?.id)
   );
 
+  // Status breakdown calculations
+  const pendingCount = sellerOrders.filter(o => o.status === 'Confirmed' || !o.status).length;
+  const activeCount = sellerOrders.filter(o => ['Preparing', 'Dispatched', 'Out for Delivery'].includes(o.status)).length;
+  const completedCount = sellerOrders.filter(o => o.status === 'Delivered').length;
+
+  // Calculate Revenue ONLY from orders that are fully Delivered
+  const salesTotal = sellerOrders.reduce((sum, order) => {
+    if (order.status !== 'Delivered') return sum;
+
+    const sellerItems = order.items ? order.items.filter((i: any) => i.seller_id === user?.id || order.seller_id === user?.id) : [];
+    const sellerTotal = sellerItems.length > 0
+      ? sellerItems.reduce((acc: number, item: any) => acc + (item.price * (item.quantity || 1)), 0)
+      : order.total || 0;
+      
+    return sum + sellerTotal;
+  }, 0);
+
   const recentOrders = sellerOrders.slice(0, 3).map((order) => {
-    const sellerItems = order.items.filter((i: any) => i.seller_id === user?.id);
-    const sellerTotal = sellerItems.reduce((acc: number, item: any) => acc + (item.price * (item.quantity || 1)), 0);
+    const sellerItems = order.items ? order.items.filter((i: any) => i.seller_id === user?.id || order.seller_id === user?.id) : [];
+    const sellerTotal = sellerItems.length > 0 
+      ? sellerItems.reduce((acc: number, item: any) => acc + (item.price * (item.quantity || 1)), 0)
+      : order.total || 0;
+
     return {
       id: order.id,
       customer: order.buyer_name || 'Mechanic',
-      items: sellerItems.length,
+      items: sellerItems.length || 1,
       total: `₦${sellerTotal.toLocaleString()}`,
-      status: order.status,
+      status: order.status || 'Confirmed',
       time: order.date || 'Just now',
     };
   });
 
-  // 1. Get the list of categories the seller sells
   const sellerCategories = Array.from(
     new Set(products.filter((p) => p.seller_id === user?.id).map((p) => p.category))
   );
 
-  // 2. Find request IDs where this seller already sent an offer
   const sellerRespondedRequestIds = new Set(
     offers.filter((o) => o.seller_id === user?.id).map((o) => o.request_id)
   );
 
-  // 3. Filter pending requests: matches seller's category, status is pending, and seller hasn't responded yet
   const filteredRequests = requests.filter(
     (req) =>
       sellerCategories.includes(req.category) &&
@@ -53,118 +72,128 @@ export default function SellerDashboard() {
     time: req.date || 'Just now',
   }));
 
-  const salesTotal = sellerOrders.reduce((sum, order) => {
-    const sellerItems = order.items.filter((i: any) => i.seller_id === user?.id);
-    const sellerTotal = sellerItems.reduce((acc: number, item: any) => acc + (item.price * (item.quantity || 1)), 0);
-    return sum + sellerTotal;
-  }, 0);
-
   return (
     <MobileContainer hasBottomNav>
-      <div className="p-6 space-y-8">
+      <div className="p-6 space-y-6">
         {/* Header */}
         <div className="flex justify-between items-start">
           <div>
-            <h2 className="text-2xl font-bold">Hello, {profile?.full_name || 'Seller'}</h2>
-            <p className="text-muted-foreground text-sm font-medium">
-              {profile?.store_name || 'Abuja Auto Parts'} • {profile?.location || 'Gudu Market • Shop 45'}
+            <h2 className="text-xl font-bold tracking-tight text-foreground">Hello, {profile?.full_name || 'Seller'}</h2>
+            <p className="text-muted-foreground text-xs font-medium mt-0.5">
+              {profile?.store_name || 'Abuja Auto Parts'} • {profile?.location || 'Gudu Market'}
             </p>
           </div>
           <button
-            className="bg-card p-3 rounded-2xl border border-border cursor-pointer text-muted-foreground relative"
+            className="bg-card p-2.5 rounded-xl border border-border cursor-pointer text-muted-foreground relative active:scale-95 transition-transform"
             onClick={() => navigate('/notifications')}
           >
-            <Bell size={24} />
-            <span className="absolute top-2 right-2 w-3 h-3 bg-destructive border-2 border-card rounded-full" />
+            <Bell size={20} />
+            <span className="absolute top-2 right-2 w-2 h-2 bg-destructive rounded-full" />
           </button>
         </div>
 
-        {/* Stats Grid */}
-        <div className="grid grid-cols-2 gap-4">
-          <Card className="p-5 bg-primary text-primary-foreground border-none rounded-[32px] space-y-4">
-            <div className="bg-white/20 w-10 h-10 rounded-xl flex items-center justify-center">
-              <TrendingUp size={20} />
-            </div>
-            <div>
-              <p className="text-xs text-primary-foreground/60 font-medium">Today's Sales</p>
-              <p className="text-xl font-black">₦{salesTotal.toLocaleString()}</p>
-            </div>
-          </Card>
-          <Card className="p-5 bg-card border border-border rounded-[32px] space-y-4">
-            <div className="bg-primary/10 w-10 h-10 rounded-xl flex items-center justify-center text-primary">
-              <ShoppingBag size={20} />
-            </div>
-            <div>
-              <p className="text-xs text-muted-foreground font-medium">Active Orders</p>
-              <p className="text-xl font-black text-foreground">{sellerOrders.length}</p>
-            </div>
-          </Card>
-        </div>
+        {/* 2x2 Clean, Minimalist Metrics Grid */}
+<div className="grid grid-cols-2 gap-4">
+  {/* Row 1, Box 1: Revenue (Sales) */}
+  <Card className="p-5 bg-primary text-primary-foreground border-none rounded-2xl flex flex-col justify-between h-28 shadow-sm shadow-primary/5">
+    <div className="bg-white/15 w-8 h-8 rounded-lg flex items-center justify-center">
+      <TrendingUp size={16} />
+    </div>
+    <div>
+      <p className="text-[10px] text-primary-foreground/75 font-semibold uppercase tracking-wider">Total Sales</p>
+      <p className="text-lg font-bold tracking-tight mt-1">₦{salesTotal.toLocaleString()}</p>
+    </div>
+  </Card>
+
+  {/* Row 1, Box 2: Delivered Orders */}
+  <Card className="p-5 bg-card border border-border rounded-2xl flex flex-col justify-between h-28 shadow-sm">
+    <div className="bg-emerald-500/10 text-emerald-600 w-8 h-8 rounded-lg flex items-center justify-center">
+      <CheckCircle2 size={16} />
+    </div>
+    <div>
+      <p className="text-[10px] text-muted-foreground font-semibold uppercase tracking-wider">Delivered</p>
+      <p className="text-lg font-bold text-foreground tracking-tight mt-1">
+        {completedCount} <span className="text-sm font-medium text-muted-foreground/80 lowercase">orders</span>
+      </p>
+    </div>
+  </Card>
+
+  {/* Row 2, Box 1: Pending Orders */}
+  <Card className="p-5 bg-card border border-border rounded-2xl flex flex-col justify-between h-28 shadow-sm">
+    <div className="bg-amber-500/10 text-amber-600 w-8 h-8 rounded-lg flex items-center justify-center">
+      <Clock size={16} />
+    </div>
+    <div>
+      <p className="text-[10px] text-muted-foreground font-semibold uppercase tracking-wider">Pending</p>
+      <p className="text-lg font-bold text-foreground tracking-tight mt-1">
+        {pendingCount} <span className="text-sm font-medium text-muted-foreground/80 lowercase">new</span>
+      </p>
+    </div>
+  </Card>
+
+  {/* Row 2, Box 2: In Progress Orders */}
+  <Card className="p-5 bg-card border border-border rounded-2xl flex flex-col justify-between h-28 shadow-sm">
+    <div className="bg-blue-500/10 text-blue-600 w-8 h-8 rounded-lg flex items-center justify-center">
+      <ShoppingBag size={16} />
+    </div>
+    <div>
+      <p className="text-[10px] text-muted-foreground font-semibold uppercase tracking-wider">In Progress</p>
+      <p className="text-lg font-bold text-foreground tracking-tight mt-1">
+        {activeCount} <span className="text-sm font-medium text-muted-foreground/80 lowercase">active</span>
+      </p>
+    </div>
+  </Card>
+</div>
 
         {/* Part Requests Notification */}
         {pendingRequests.length > 0 && (
           <Card
-            className="p-5 bg-amber-50 border-2 border-amber-200 rounded-[32px] flex items-center gap-4 cursor-pointer active:scale-[0.98] transition-all"
+            className="p-4 bg-amber-50/50 border border-amber-100 rounded-2xl flex items-center gap-4 cursor-pointer active:scale-[0.99] transition-all"
             onClick={() => navigate(`/messages?recipientId=${pendingRequests[0].mechanic_id || 'mech-seed'}&requestId=${pendingRequests[0].id}`)}
           >
-            <div className="bg-amber-100 p-4 rounded-2xl text-amber-600">
-              <MessageCircle size={32} />
+            <div className="bg-amber-100/80 p-3 rounded-xl text-amber-600 shrink-0">
+              <MessageCircle size={24} />
             </div>
-            <div className="flex-1">
-              <h4 className="font-bold text-amber-900 leading-tight">New Part Request</h4>
-              <p className="text-xs text-amber-700 mt-1">
-                Customer is looking for a {pendingRequests[0].part} for {pendingRequests[0].vehicle}.
+            <div className="flex-1 min-w-0">
+              <h4 className="font-bold text-amber-900 text-xs tracking-tight">New Part Request</h4>
+              <p className="text-[11px] text-amber-700 mt-0.5 truncate">
+                Looking for a {pendingRequests[0].part} ({pendingRequests[0].vehicle}).
               </p>
             </div>
-            <ChevronRight size={20} className="text-amber-400" />
+            <ChevronRight size={16} className="text-amber-400 shrink-0" />
           </Card>
         )}
 
-        {/* Suggestion to set up inventory if seller has no categories */}
-        {sellerCategories.length === 0 && (
-          <Card
-            className="p-5 bg-blue-50 border border-blue-200 rounded-[32px] flex items-center gap-4 cursor-pointer active:scale-[0.98] transition-all"
-            onClick={() => navigate('/inventory')}
-          >
-            <div className="bg-blue-100 p-4 rounded-2xl text-blue-600">
-              <ShoppingBag size={32} />
-            </div>
-            <div className="flex-1">
-              <h4 className="font-bold text-blue-900 leading-tight">Set Up Your Inventory</h4>
-              <p className="text-xs text-blue-700 mt-1">
-                List products in your store to start receiving matching requests from mechanics.
-              </p>
-            </div>
-            <ChevronRight size={20} className="text-blue-400" />
-          </Card>
-        )}
-
-        {/* Recent Orders */}
-        <div className="space-y-4">
-          <div className="flex justify-between items-center px-1">
-            <h3 className="text-xl font-bold">Recent Orders</h3>
-            <button className="text-primary font-bold text-sm cursor-pointer">View All</button>
+        {/* Recent Orders Section */}
+        <div className="space-y-3">
+          <div className="flex justify-between items-center px-0.5">
+            <h3 className="text-base font-bold tracking-tight text-foreground">Recent Orders</h3>
+            <button 
+              onClick={() => navigate('/orders')} 
+              className="text-primary font-bold text-xs cursor-pointer hover:underline transition-all"
+            >
+              View All
+            </button>
           </div>
-          <div className="space-y-3">
+          
+          <div className="space-y-2.5">
             {recentOrders.map((order) => (
               <Card
                 key={order.id}
-                className="p-4 rounded-3xl border border-border shadow-sm flex items-center gap-4 active:scale-[0.98] transition-transform"
+                className="p-3.5 rounded-2xl border border-border shadow-none flex items-center gap-3.5 active:scale-[0.99] transition-transform cursor-pointer hover:border-muted-foreground/20"
                 onClick={() => navigate(`/order/${order.id}`)}
               >
-                <div className={`w-12 h-12 rounded-2xl flex items-center justify-center shrink-0 ${order.status === 'New' ? 'bg-primary text-white' : 'bg-muted text-muted-foreground'
-                  }`}>
-                  <Package size={24} />
+                <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0 bg-muted/60 text-muted-foreground">
+                  <Package size={20} />
                 </div>
-                <div className="flex-1">
-                  <div className="flex justify-between items-start">
-                    <h4 className="font-bold text-sm">{order.customer}</h4>
-                    <span className="text-[10px] text-muted-foreground font-medium">{order.time}</span>
+                <div className="flex-1 min-w-0">
+                  <div className="flex justify-between items-center gap-2">
+                    <h4 className="font-bold text-xs text-foreground truncate">{order.customer}</h4>
+                    <span className="text-[10px] text-muted-foreground shrink-0 font-medium">{order.time}</span>
                   </div>
                   <div className="flex justify-between items-end mt-1">
-                    <p className="text-xs text-muted-foreground">{order.items} items • {order.total}</p>
-                    <span className={`text-[10px] font-black px-2 py-0.5 rounded-full uppercase ${order.status === 'New' ? 'bg-primary/10 text-primary' : 'bg-muted text-muted-foreground'
-                      }`}>
+                    <p className="text-[11px] text-muted-foreground truncate">{order.items} items • {order.total}</p>
+                    <span className="text-[9px] font-bold tracking-wider px-2 py-0.5 rounded-md uppercase bg-primary/5 text-primary shrink-0">
                       {order.status}
                     </span>
                   </div>

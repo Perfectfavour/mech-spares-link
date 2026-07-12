@@ -30,6 +30,7 @@
     "noImplicitReturns": false,
     "noImplicitThis": false,
     "noImplicitOverride": false,
+    "ignoreDeprecations": "6.0",
 
     /* Path mapping */
     "baseUrl": ".",

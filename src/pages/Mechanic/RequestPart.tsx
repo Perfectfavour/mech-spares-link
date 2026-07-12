@@ -287,7 +287,7 @@ export default function RequestPart() {
                 <button
                   type="button"
                   onClick={() => setFormData(prev => ({ ...prev, image: null }))}
-                  className="cursor-pointer absolute top-3 right-3 bg-destructive text-destructive-foreground p-2 rounded-full shadow-lg transition-colors cursor-pointer"
+                  className="absolute top-3 right-3 bg-destructive text-destructive-foreground p-2 rounded-full shadow-lg transition-colors cursor-pointer"
                 >
                   <Trash2 size={16} />
                 </button>

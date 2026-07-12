@@ -10,7 +10,7 @@ export default function OrderTracking() {
   const navigate = useNavigate();
   const { orders } = useApp();
 
-  const order = orders.find((o) => o.id === id);
+  const order = orders.find(o => o.id === id) || orders[0]
   const displayId = order?.id && order.id.length > 8 ? order.id.slice(0, 8).toUpperCase() : order?.id || 'MOCK-ID';
   const sellerId = order?.items?.[0]?.seller_id || 'seller-seed';
   const orderStatus = order?.status || 'Confirmed';

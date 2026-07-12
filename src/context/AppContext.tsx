@@ -558,8 +558,15 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
-  const addOrder = async (order: any): Promise<string> => {
-    let finalId = order.id;
+const addOrder = async (order: any): Promise<string> => {
+    // 1. Resolve a reliable fallback ID up front
+    let finalId = order.id || `ord-${Date.now()}`;
+    
+    // Extract primary seller ID from the order items list to ensure the seller can query it
+    const primarySellerId = order.items && order.items.length > 0 
+      ? order.items[0].seller_id 
+      : 'seller-seed';
+
     if (isSupabaseActive && user) {
       try {
         const { data: ord, error } = await supabase
@@ -567,11 +574,12 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
           .insert([
             {
               buyer_id: user.id,
+              seller_id: primarySellerId, // CRITICAL: Link top-level order to the seller
               total: order.total,
               status: 'Confirmed',
-              delivery_address: 'Precision Motors, Plot 124, Gudu District, Abuja',
-              delivery_method: 'Express Delivery',
-              payment_method: 'Pay on Delivery',
+              delivery_address: order.delivery_address || 'Precision Motors, Plot 124, Gudu District, Abuja',
+              delivery_method: order.delivery_method || 'Express Delivery',
+              payment_method: order.payment_method || 'Pay on Delivery',
             }
           ])
           .select()
@@ -581,57 +589,59 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
 
         if (ord) {
           finalId = ord.id;
-          // Insert order items
+          
+          // Map and construct individual order row line-items
           const itemsToInsert = order.items.map((item: any) => ({
             order_id: ord.id,
-            product_id: item.id.startsWith('p') && item.id.length > 5 ? item.id : undefined, // Check if UUID
+            product_id: item.id && !item.id.startsWith('p') && item.id.length > 5 ? item.id : undefined, // UUID verification filter
             quantity: item.quantity || 1,
             price: item.price,
           }));
 
-          // Clean items that don't match standard UUID product IDs for seed mock items
-          // Create dummy product if it doesn't match UUID
-          for (let i = 0; i < itemsToInsert.length; i++) {
-            if (!itemsToInsert[i].product_id) {
-              // Try to find if product exists or insert placeholder
-              const { data: placeholderProd } = await supabase
-                .from('products')
-                .insert([
-                  {
-                    seller_id: order.items[i].seller_id || 'seller-seed',
-                    name: order.items[i].name,
-                    price: order.items[i].price,
-                    category: order.items[i].category || 'Brakes',
-                    stock: 5,
-                  }
-                ])
-                .select()
-                .single();
-              if (placeholderProd) {
-                itemsToInsert[i].product_id = placeholderProd.id;
-              }
-            }
-          }
-
+          // Insert verified records to cross-reference mapping link tables
           const { error: itemsError } = await supabase
             .from('order_items')
             .insert(itemsToInsert.filter((i: any) => i.product_id));
 
           if (itemsError) throw itemsError;
 
-          setOrders((prev) => [
-            { ...order, id: ord.id, date: ord.created_at.split('T')[0] },
-            ...prev
-          ]);
+          // Hydrate local system context state with BOTH structural formats 
+          // required by the Buyer tracking view and Seller KPI analytics dashboards
+          setOrders((prev) => {
+            const structuralOrder = {
+              ...order,
+              id: ord.id,
+              buyer_id: user.id,
+              seller_id: primarySellerId,
+              status: 'Confirmed',
+              date: ord.created_at ? ord.created_at.split('T')[0] : new Date().toISOString().split('T')[0],
+              created_at: ord.created_at,
+              items: order.items.map((item: any) => ({
+                ...item,
+                seller_id: item.seller_id || primarySellerId
+              }))
+            };
+            
+            // Sync current session state snapshot into mock storage for persistence testing
+            const currentHistory = [structuralOrder, ...prev];
+            localStorage.setItem(STORAGE_PREFIX + 'orders', JSON.stringify(currentHistory));
+            return currentHistory;
+          });
         }
       } catch (e) {
-        if (!handleSupabaseWriteFallback(e, () => saveLocalOrder(order), 'Failed to save order to Supabase')) {
+        if (!handleSupabaseWriteFallback(
+          e, 
+          () => saveLocalOrder({ ...order, id: finalId, seller_id: primarySellerId }), 
+          'Failed to save order to Supabase'
+        )) {
           console.error('Unexpected order insert error:', e);
         }
       }
     } else {
-      saveLocalOrder(order);
+      // Fallback directly to programmatic runtime mocking engine standard operations
+      saveLocalOrder({ ...order, id: finalId, seller_id: primarySellerId });
     }
+    
     clearCart();
     return finalId;
   };
