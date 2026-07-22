@@ -88,7 +88,7 @@ export default function MechanicHome() {
             <h3 className="text-lg font-semibold">Categories</h3>
             <button
               onClick={() => setShowAllCategories(!showAllCategories)}
-              className="text-red-700 font-bold text-sm hover:underline cursor-pointer"
+              className="text-primary font-bold text-sm hover:underline cursor-pointer"
             >
               {showAllCategories ? 'Show Less' : 'See All'}
             </button>
@@ -116,7 +116,7 @@ export default function MechanicHome() {
         <div className="space-y-4 pb-4">
           <div className="flex justify-between items-center px-1">
             <h3 className="text-lg font-semibold">Trending Near You</h3>
-            <button className="text-red-700 font-bold text-sm cursor-pointer" onClick={() => navigate('/search')}>View All</button>
+            <button className="text-primary font-bold text-sm cursor-pointer" onClick={() => navigate('/search')}>View All</button>
           </div>
           <div className="grid grid-cols-2 gap-6">
             {trendingParts.map((part) => (
