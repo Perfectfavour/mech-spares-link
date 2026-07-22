@@ -35,7 +35,7 @@ export default function Onboarding() {
   };
 
   return (
-    <div className="h-[100dvh] overflow-hidden bg-background flex flex-col justify-between p-8 max-w-md mx-auto">
+    <div className="h-[100dvh] overflow-hidden bg-background flex flex-col justify-between p-8 max-w-md mx-auto font-poppins">
       <div className="flex-1 flex flex-col items-center justify-center">
         <AnimatePresence mode="wait">
           <motion.div

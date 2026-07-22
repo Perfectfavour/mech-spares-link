@@ -181,7 +181,7 @@ export default function Messages() {
             <button onClick={() => navigate('/')} className="text-foreground hover:bg-muted p-2 rounded-full transition-all">
               <ArrowLeft size={20} />
             </button>
-            <h1 className="text-2xl font-bold">Messages</h1>
+            <h1 className="text-2xl font-semibold">Messages</h1>
           </div>
 
           <div className="relative">

@@ -15,7 +15,7 @@ export default function Splash() {
   }, [navigate]);
 
   return (
-    <MobileContainer className="bg-primary flex flex-col items-center justify-center text-primary-foreground">
+    <MobileContainer className="bg-primary flex flex-col items-center justify-center text-primary-foreground font-poppins">
       <motion.div
         initial={{ scale: 0.8, opacity: 0 }}
         animate={{ scale: 1, opacity: 1 }}

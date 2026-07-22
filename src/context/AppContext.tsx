@@ -215,9 +215,40 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         .channel('messages-db-changes')
         .on(
           'postgres_changes',
-          { event: 'INSERT', schema: 'public', table: 'messages' },
-          (payload) => {
-            setMessages((prev) => [...prev, payload.new]);
+          { event: '*', schema: 'public', table: 'messages' },
+          async (payload) => {
+            if (payload.eventType === 'INSERT') {
+              const newMsg = payload.new;
+              
+              // Immediately add it so there is no lag in chat bubbles
+              setMessages((prev) => {
+                if (prev.some((m) => m.id === newMsg.id)) return prev;
+                return [...prev, newMsg];
+              });
+
+              // Asynchronously query database to fetch profile joins for sender and receiver
+              try {
+                const { data, error } = await supabase
+                  .from('messages')
+                  .select('*, sender:sender_id(full_name, store_name, workshop_name), receiver:receiver_id(full_name, store_name, workshop_name)')
+                  .eq('id', newMsg.id)
+                  .single();
+                
+                if (data && !error) {
+                  setMessages((prev) =>
+                    prev.map((m) => (m.id === newMsg.id ? data : m))
+                  );
+                }
+              } catch (err) {
+                console.error('Error fetching message details for real-time sync:', err);
+              }
+            } else if (payload.eventType === 'DELETE') {
+              setMessages((prev) => prev.filter((m) => m.id !== payload.old.id));
+            } else if (payload.eventType === 'UPDATE') {
+              setMessages((prev) =>
+                prev.map((m) => (m.id === payload.new.id ? { ...m, ...payload.new } : m))
+              );
+            }
           }
         )
         .subscribe();

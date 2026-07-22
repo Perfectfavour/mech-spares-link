@@ -52,8 +52,15 @@ export default function Cart() {
       <div className="flex-1 px-6 space-y-4 overflow-y-auto">
         {cart.map((item, idx) => (
           <Card key={idx} className="p-4 rounded-3xl border border-border flex gap-4">
-            <div className="w-20 h-20 rounded-2xl overflow-hidden shrink-0">
-              <img src={item.image} alt={item.name} className="w-full h-full object-cover" />
+            <div className="w-20 h-20 rounded-2xl overflow-hidden shrink-0 bg-muted">
+              <img 
+                src={item.image || item.image_url} 
+                alt={item.name} 
+                className="w-full h-full object-cover" 
+                onError={(e) => {
+                  e.currentTarget.src = 'https://images.unsplash.com/photo-1486006920555-c77dce18193b?auto=format&fit=crop&w=400&q=80';
+                }}
+              />
             </div>
             <div className="flex-1 flex flex-col justify-between">
               <div className="flex justify-between items-start">

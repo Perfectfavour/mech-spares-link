@@ -27,7 +27,7 @@ export default function SellerOrders() {
           >
             <ChevronLeft size={20} />
           </button>
-          <h2 className="text-xl font-bold tracking-tight text-foreground">Manage Orders</h2>
+          <h2 className="text-xl font-semibold tracking-tight text-foreground">Manage Orders</h2>
         </div>
 
         {/* Orders List */}

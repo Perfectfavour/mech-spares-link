@@ -212,7 +212,7 @@ export default function Profile() {
   return (
     <MobileContainer hasBottomNav>
       <div className="p-6 space-y-8">
-        <h1 className="text-2xl font-bold">Profile</h1>
+        <h1 className="text-2xl font-semibold">Profile</h1>
 
         {/* Cover Image with Upload */}
         <div className="relative h-32 w-full rounded-[32px] overflow-hidden bg-muted mb-4">

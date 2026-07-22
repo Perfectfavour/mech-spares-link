@@ -78,7 +78,7 @@ export default function SellerDashboard() {
         {/* Header */}
         <div className="flex justify-between items-start">
           <div>
-            <h2 className="text-xl font-bold tracking-tight text-foreground">Hello, {profile?.full_name || 'Seller'}</h2>
+            <h2 className="text-xl font-semibold tracking-tight text-foreground">Hello, {profile?.full_name || 'Seller'}</h2>
             <p className="text-muted-foreground text-xs font-medium mt-0.5">
               {profile?.store_name || 'Abuja Auto Spare Parts'} • {profile?.location || 'Gudu Market'}
             </p>
