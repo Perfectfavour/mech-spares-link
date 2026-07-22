@@ -85,10 +85,10 @@ export default function MechanicHome() {
         {/* Categories */}
         <div className="space-y-4">
           <div className="flex justify-between items-center px-1">
-            <h3 className="text-xl font-bold">Categories</h3>
+            <h3 className="text-lg font-semibold">Categories</h3>
             <button
               onClick={() => setShowAllCategories(!showAllCategories)}
-              className="text-primary font-bold text-sm hover:underline cursor-pointer"
+              className="text-red-700 font-bold text-sm hover:underline cursor-pointer"
             >
               {showAllCategories ? 'Show Less' : 'See All'}
             </button>
@@ -102,7 +102,7 @@ export default function MechanicHome() {
                   className="bg-card p-4 rounded-3xl flex flex-col items-center gap-2 border border-border shadow-sm active:scale-95 hover:bg-primary/5 hover:border-primary/20 hover:-translate-y-1 hover:shadow-md transition-all duration-300 cursor-pointer"
                   onClick={() => navigate(`/search?category=${cat.name}`)}
                 >
-                  <div className="text-red-700 p-2 bg-primary/10 rounded-2xl">
+                  <div className="text-primary p-2 bg-primary/10 rounded-2xl">
                     <Icon size={20} />
                   </div>
                   <span className="text-xs font-bold text-center">{cat.name}</span>
@@ -115,8 +115,8 @@ export default function MechanicHome() {
         {/* Trending Parts */}
         <div className="space-y-4 pb-4">
           <div className="flex justify-between items-center px-1">
-            <h3 className="text-xl font-bold">Trending Near You</h3>
-            <button className="text-primary font-bold text-sm cursor-pointer" onClick={() => navigate('/search')}>View All</button>
+            <h3 className="text-lg font-semibold">Trending Near You</h3>
+            <button className="text-red-700 font-bold text-sm cursor-pointer" onClick={() => navigate('/search')}>View All</button>
           </div>
           <div className="grid grid-cols-2 gap-6">
             {trendingParts.map((part) => (
